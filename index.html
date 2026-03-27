@@ -8,21 +8,32 @@
 *{box-sizing:border-box;margin:0;padding:0}
 
 :root{
-  --bg:#0f0720;
-  --card:#1c1030;
-  --card2:#231540;
-  --border:rgba(255,255,255,0.09);
-  --gold:#f5c842;
-  --gold2:#e8a020;
-  --purple:#9b6dff;
-  --muted:#7a6a98;
-  --text:#e8deff;
-  --sub:#b0a0cc;
+  --bg:#0a0303;
+  --bg2:#120606;
+  --card:#1a0808;
+  --card2:#200b0b;
+  --border:#5c2020;
+  --gold:#d4a832;
+  --gold2:#f0c842;
+  --gold-dim:#8a6a18;
+  --red:#c0392b;
+  --red2:#8b0000;
+  --red-bright:#e84040;
+  --cream:#f5e8d0;
+  --muted:#8a5a5a;
+  --text:#f0ddc0;
+  --sub:#c4a080;
+  --green:#2ecc71;
+  --green-bg:rgba(46,204,113,.12);
+  --red-bg:rgba(192,57,43,.12);
 }
 
 body{
-  font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP',sans-serif;
+  font-family:'Hiragino Mincho ProN','Yu Mincho','Georgia',serif;
   background:var(--bg);
+  background-image:
+    radial-gradient(ellipse at 50% 0%, #2a0808 0%, transparent 70%),
+    repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(255,255,255,.008) 40px, rgba(255,255,255,.008) 41px);
   color:var(--text);
   min-height:100vh;
   padding:0 0 60px;
@@ -30,54 +41,120 @@ body{
 
 /* ─── ヘッダー ─── */
 header{
-  background:linear-gradient(180deg,#1e0a3c 0%,var(--bg) 100%);
-  padding:28px 20px 20px;
+  background:linear-gradient(180deg,#1e0404 0%,#0d0303 100%);
+  padding:24px 20px 18px;
   text-align:center;
   border-bottom:1px solid var(--border);
+  position:relative;
+  overflow:hidden;
 }
-header h1{font-size:24px;font-weight:800;letter-spacing:.15em;color:var(--gold);text-shadow:0 0 18px rgba(245,200,66,.4)}
-header p{font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:.1em}
+header::before,header::after{
+  content:'◆ ◇ ◆ ◇ ◆ ◇ ◆ ◇ ◆ ◇ ◆ ◇ ◆ ◇ ◆';
+  display:block;font-size:8px;color:var(--gold-dim);letter-spacing:4px;
+}
+header::before{margin-bottom:10px}
+header::after{margin-top:10px}
+header h1{
+  font-size:30px;font-weight:900;letter-spacing:.35em;
+  color:var(--gold2);
+  text-shadow:0 0 20px rgba(212,168,50,.6), 0 2px 4px rgba(0,0,0,.8);
+  line-height:1;
+}
+header .sub{
+  font-size:10px;letter-spacing:.3em;color:var(--muted);
+  margin-top:5px;font-family:-apple-system,sans-serif;
+}
 
 /* ─── タブ ─── */
-.tabs{display:flex;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:10}
-.tab{flex:1;padding:13px 0;text-align:center;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;letter-spacing:.05em;transition:.2s;border-bottom:2px solid transparent}
-.tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.tabs{
+  display:flex;border-bottom:2px solid var(--border);
+  background:#0d0303;position:sticky;top:0;z-index:10;
+}
+.tab{
+  flex:1;padding:12px 0;text-align:center;
+  font-size:12px;font-weight:600;color:var(--muted);
+  cursor:pointer;letter-spacing:.08em;transition:.2s;
+  border-bottom:2px solid transparent;margin-bottom:-2px;
+  font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+}
+.tab.active{color:var(--gold2);border-bottom-color:var(--gold2)}
 
 /* ─── セクション ─── */
-.section{display:none;padding:20px 16px}
+.section{display:none;padding:18px 14px}
 .section.active{display:block}
 
 /* ─── カード ─── */
-.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px 16px;margin-bottom:14px}
-.card-title{font-size:10px;font-weight:700;letter-spacing:.18em;color:var(--gold);margin-bottom:14px;display:flex;align-items:center;gap:7px}
-.card-title::before{content:'';width:3px;height:13px;background:var(--gold);border-radius:2px;display:inline-block}
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:4px;
+  padding:16px 14px;margin-bottom:14px;
+  position:relative;
+}
+.card::before{
+  content:'';position:absolute;inset:3px;
+  border:1px solid rgba(92,32,32,.4);border-radius:2px;
+  pointer-events:none;
+}
+.card-title{
+  font-size:11px;font-weight:700;letter-spacing:.2em;
+  color:var(--gold);margin-bottom:14px;
+  display:flex;align-items:center;gap:8px;
+  font-family:-apple-system,sans-serif;
+}
+.card-title::before,.card-title::after{
+  content:'';flex:1;height:1px;
+  background:linear-gradient(90deg,transparent,var(--gold-dim));
+}
+.card-title::after{
+  background:linear-gradient(90deg,var(--gold-dim),transparent);
+}
 
 /* ─── フォーム要素 ─── */
-.field{margin-bottom:13px}
+.field{margin-bottom:12px}
 .field:last-child{margin-bottom:0}
-label{display:block;font-size:12px;color:var(--sub);margin-bottom:5px}
-.hint{font-size:10px;color:var(--muted);margin-left:4px}
+label{
+  display:block;font-size:11px;color:var(--sub);margin-bottom:5px;
+  letter-spacing:.08em;font-family:-apple-system,sans-serif;
+}
+.hint{font-size:10px;color:var(--muted);margin-left:3px}
 
 input[type=date],
 input[type=number],
 input[type=text],
 select{
   width:100%;
-  background:rgba(255,255,255,.06);
+  background:rgba(0,0,0,.4);
   border:1px solid var(--border);
-  border-radius:10px;
+  border-radius:3px;
   color:var(--text);
   font-size:16px;
-  padding:11px 13px;
+  padding:10px 12px;
   outline:none;
   transition:.2s;
   -webkit-appearance:none;
   appearance:none;
+  font-family:'Hiragino Mincho ProN','Yu Mincho',serif;
 }
-input:focus,select:focus{border-color:var(--gold);background:rgba(245,200,66,.06)}
-input[type=date]::-webkit-calendar-picker-indicator,
-input[type=date]::-webkit-inner-spin-button{filter:invert(.7);cursor:pointer}
-select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a6a98' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
+input:focus,select:focus{
+  border-color:var(--gold);
+  background:rgba(212,168,50,.06);
+  box-shadow:0 0 0 2px rgba(212,168,50,.12);
+}
+input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.5) sepia(1) hue-rotate(320deg);cursor:pointer}
+select{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238a5a5a' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;padding-right:34px;
+}
+
+/* 単位付き入力 */
+.input-unit{position:relative}
+.input-unit input{padding-right:36px}
+.input-unit .unit{
+  position:absolute;right:11px;top:50%;transform:translateY(-50%);
+  font-size:13px;color:var(--muted);pointer-events:none;
+  font-family:-apple-system,sans-serif;
+}
 
 /* ─── 2列グリッド ─── */
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -85,38 +162,115 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 /* ─── 計算ボタン ─── */
 .btn-calc{
   width:100%;padding:15px;
-  background:linear-gradient(135deg,var(--gold),var(--gold2));
-  border:none;border-radius:14px;
-  font-size:16px;font-weight:800;letter-spacing:.1em;
-  color:#0f0720;cursor:pointer;
-  box-shadow:0 4px 20px rgba(245,200,66,.28);
-  transition:.15s;
+  background:linear-gradient(135deg,#8b0000,#c0392b);
+  border:1px solid #e84040;border-radius:3px;
+  font-size:16px;font-weight:700;letter-spacing:.2em;
+  color:var(--gold2);cursor:pointer;
+  box-shadow:0 0 20px rgba(192,57,43,.35), inset 0 1px 0 rgba(255,255,255,.1);
+  transition:.15s;position:relative;overflow:hidden;
+  font-family:-apple-system,sans-serif;
 }
-.btn-calc:active{opacity:.85;transform:scale(.98)}
+.btn-calc::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(255,255,255,.08) 0%,transparent 50%);
+}
+.btn-calc:active{opacity:.85;transform:scale(.99)}
 
-/* ─── 結果表示 ─── */
-#resultBox{
-  display:none;
-  background:linear-gradient(135deg,rgba(245,200,66,.1),rgba(155,109,255,.08));
-  border:1px solid rgba(245,200,66,.3);
-  border-radius:16px;padding:20px 16px;margin-top:14px;
+/* ─── シャンパン行 ─── */
+.champ-rows{margin-bottom:10px}
+.champ-row{
+  background:rgba(0,0,0,.3);border:1px solid rgba(92,32,32,.5);
+  border-radius:3px;padding:10px 10px 8px;margin-bottom:8px;position:relative;
 }
-.result-title{text-align:center;font-size:11px;letter-spacing:.18em;color:var(--gold);margin-bottom:16px;font-weight:700}
-.breakdown-item{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:14px}
-.breakdown-item:last-child{border-bottom:none}
+.champ-row-grid{display:grid;grid-template-columns:1fr 80px;gap:8px;align-items:end}
+.champ-row-result{
+  font-size:12px;color:var(--gold);margin-top:6px;text-align:right;
+  font-family:-apple-system,sans-serif;letter-spacing:.03em;min-height:16px;
+}
+.btn-champ-del{
+  position:absolute;top:6px;right:6px;
+  background:none;border:none;color:var(--muted);font-size:15px;
+  cursor:pointer;line-height:1;padding:2px 4px;
+}
+.btn-champ-del:hover{color:var(--red-bright)}
+.btn-champ-add{
+  width:100%;padding:9px;
+  background:transparent;border:1px dashed var(--border);border-radius:3px;
+  font-size:13px;color:var(--muted);cursor:pointer;letter-spacing:.1em;
+  transition:.15s;font-family:-apple-system,sans-serif;
+}
+.btn-champ-add:hover{border-color:var(--gold-dim);color:var(--gold)}
+
+/* ─── 集客バック ─── */
+.sales-calc{
+  font-size:13px;color:var(--sub);margin-top:6px;
+  font-family:-apple-system,sans-serif;text-align:right;
+}
+.sales-calc strong{color:var(--gold);font-size:15px}
+
+/* ─── 結果ボックス ─── */
+#resultBox{
+  display:none;margin-top:14px;
+  border:1px solid var(--gold-dim);border-radius:4px;
+  overflow:hidden;
+}
+.result-header{
+  background:linear-gradient(135deg,#1e0808,#2a0a0a);
+  padding:12px 16px;text-align:center;
+  border-bottom:1px solid var(--border);
+}
+.result-header p{
+  font-size:11px;letter-spacing:.25em;color:var(--gold);
+  font-family:-apple-system,sans-serif;
+}
+.result-body{padding:14px}
+
+.breakdown-item{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:7px 0;border-bottom:1px solid rgba(92,32,32,.3);font-size:13px;
+  font-family:-apple-system,sans-serif;
+}
+.breakdown-item:last-of-type{border-bottom:none}
 .breakdown-item .lbl{color:var(--muted)}
-.breakdown-item .val{font-weight:600;color:var(--text)}
-.breakdown-item .val.zero{color:#3a2a50}
-.total-area{background:rgba(245,200,66,.1);border-radius:12px;padding:16px;text-align:center;margin-top:14px}
-.total-lbl{font-size:11px;letter-spacing:.15em;color:var(--gold);margin-bottom:4px}
-.total-num{font-size:40px;font-weight:800;color:var(--gold);text-shadow:0 0 20px rgba(245,200,66,.35)}
+.breakdown-item .val{font-weight:600;color:var(--sub)}
+.breakdown-item .val.zero{color:#3a1a1a}
+.breakdown-item .val.active-val{color:var(--gold2)}
+
+/* 採用判定バナー */
+.verdict{
+  border-radius:3px;padding:12px 14px;margin:12px 0;
+  font-family:-apple-system,sans-serif;
+}
+.verdict.adopted-drink{
+  background:var(--red-bg);border:1px solid rgba(192,57,43,.4);
+}
+.verdict.adopted-sales{
+  background:var(--green-bg);border:1px solid rgba(46,204,113,.3);
+}
+.verdict-title{font-size:10px;letter-spacing:.15em;margin-bottom:4px;font-weight:700}
+.verdict.adopted-drink .verdict-title{color:var(--red)}
+.verdict.adopted-sales .verdict-title{color:var(--green)}
+.verdict-desc{font-size:13px;font-weight:700}
+.verdict.adopted-drink .verdict-desc{color:var(--cream)}
+.verdict.adopted-sales .verdict-desc{color:var(--cream)}
+.verdict-note{font-size:10px;color:var(--muted);margin-top:5px;line-height:1.5}
+
+.total-area{
+  background:linear-gradient(135deg,rgba(212,168,50,.12),rgba(139,0,0,.1));
+  border:1px solid var(--gold-dim);border-radius:3px;
+  padding:16px;text-align:center;margin-top:8px;
+}
+.total-lbl{font-size:10px;letter-spacing:.25em;color:var(--gold);margin-bottom:4px;font-family:-apple-system,sans-serif}
+.total-num{font-size:42px;font-weight:900;color:var(--gold2);
+  text-shadow:0 0 24px rgba(212,168,50,.45);letter-spacing:.02em}
 .total-num small{font-size:20px;font-weight:600}
 
 .btn-save{
   width:100%;margin-top:12px;padding:13px;
-  background:var(--purple);border:none;border-radius:12px;
-  font-size:14px;font-weight:700;letter-spacing:.08em;color:#fff;
-  cursor:pointer;transition:.15s;
+  background:linear-gradient(135deg,#1a0055,#2d0080);
+  border:1px solid #6040c0;border-radius:3px;
+  font-size:14px;font-weight:700;letter-spacing:.1em;color:#d0b8ff;
+  cursor:pointer;transition:.15s;font-family:-apple-system,sans-serif;
 }
 .btn-save:active{opacity:.85}
 
@@ -124,112 +278,114 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .staff-list{list-style:none}
 .staff-item{
   display:flex;align-items:center;justify-content:space-between;
-  padding:11px 12px;background:var(--card2);
-  border-radius:10px;margin-bottom:8px;font-size:14px;
+  padding:10px 12px;background:var(--card2);
+  border:1px solid var(--border);border-radius:3px;margin-bottom:7px;font-size:14px;
 }
 .staff-item span{color:var(--text)}
-.btn-del{background:none;border:1px solid rgba(255,100,100,.3);border-radius:6px;padding:4px 10px;font-size:11px;color:#ff7070;cursor:pointer}
-.add-row{display:flex;gap:8px;margin-top:4px}
+.btn-del{
+  background:none;border:1px solid rgba(255,80,80,.3);border-radius:3px;
+  padding:4px 10px;font-size:11px;color:#ff6060;cursor:pointer;
+  font-family:-apple-system,sans-serif;
+}
+.add-row{display:flex;gap:8px;margin-top:10px}
 .add-row input{flex:1}
 .btn-add{
-  padding:11px 16px;background:var(--purple);border:none;
-  border-radius:10px;font-size:14px;font-weight:700;color:#fff;cursor:pointer;white-space:nowrap;
+  padding:10px 14px;background:var(--red2);border:1px solid var(--red);
+  border-radius:3px;font-size:13px;font-weight:700;color:var(--gold);
+  cursor:pointer;white-space:nowrap;font-family:-apple-system,sans-serif;
 }
 
 /* ─── 記録一覧 ─── */
-.rec-group{margin-bottom:18px}
+.rec-group{margin-bottom:16px}
 .rec-date-head{
-  font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--purple);
-  padding:6px 4px;border-bottom:1px solid rgba(155,109,255,.2);margin-bottom:8px;
+  font-size:10px;font-weight:700;letter-spacing:.2em;color:var(--gold-dim);
+  padding:5px 4px;border-bottom:1px solid var(--border);margin-bottom:8px;
+  font-family:-apple-system,sans-serif;
 }
 .rec-card{
-  background:var(--card2);border-radius:12px;padding:13px 14px;
-  margin-bottom:8px;position:relative;
+  background:var(--card2);border:1px solid var(--border);border-radius:3px;
+  padding:12px 13px;margin-bottom:7px;position:relative;
 }
-.rec-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.rec-name{font-size:14px;font-weight:700;color:var(--text)}
-.rec-total{font-size:16px;font-weight:800;color:var(--gold)}
-.rec-detail{display:flex;flex-wrap:wrap;gap:6px}
+.rec-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+.rec-name{font-size:14px;font-weight:700;color:var(--cream)}
+.rec-total{font-size:15px;font-weight:800;color:var(--gold2)}
+.rec-detail{display:flex;flex-wrap:wrap;gap:5px}
 .tag{
-  font-size:10px;padding:3px 8px;border-radius:20px;
-  background:rgba(255,255,255,.06);color:var(--sub);
+  font-size:10px;padding:2px 7px;border-radius:2px;
+  background:rgba(92,32,32,.4);color:var(--sub);
+  font-family:-apple-system,sans-serif;
 }
-.tag.zero{opacity:.35}
+.tag.zero{opacity:.3}
+.tag.adopted{background:rgba(212,168,50,.15);color:var(--gold)}
 .btn-rec-del{
-  position:absolute;top:10px;right:10px;
-  background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:2px 6px;
+  position:absolute;top:8px;right:8px;
+  background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;padding:2px 6px;
 }
-.empty-msg{text-align:center;color:var(--muted);font-size:13px;padding:40px 0}
-
-/* ─── スクロールバー ─── */
-::-webkit-scrollbar{width:4px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px}
+.empty-msg{text-align:center;color:var(--muted);font-size:13px;padding:40px 0;
+  font-family:-apple-system,sans-serif;letter-spacing:.1em;}
 
 /* ─── 月間集計 ─── */
-.month-selector{display:flex;gap:10px;align-items:center;margin-bottom:18px}
+.month-selector{display:flex;gap:10px;align-items:center;margin-bottom:16px}
 .month-selector select{flex:1}
 .btn-print{
-  padding:11px 16px;background:var(--card2);border:1px solid var(--border);
-  border-radius:10px;font-size:13px;font-weight:600;color:var(--sub);
-  cursor:pointer;white-space:nowrap;transition:.15s;flex-shrink:0;
+  padding:10px 14px;background:var(--card2);border:1px solid var(--border);
+  border-radius:3px;font-size:12px;font-weight:600;color:var(--sub);
+  cursor:pointer;white-space:nowrap;font-family:-apple-system,sans-serif;
 }
-.btn-print:active{background:var(--card)}
 
-.summary-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:12px}
-.summary-table{
-  width:100%;border-collapse:collapse;font-size:13px;min-width:480px;
-}
+.summary-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:3px;border:1px solid var(--border)}
+.summary-table{width:100%;border-collapse:collapse;font-size:12px;min-width:520px;font-family:-apple-system,sans-serif}
 .summary-table th{
-  background:#1e0a3c;color:var(--gold);font-weight:700;
-  padding:10px 10px;text-align:right;white-space:nowrap;letter-spacing:.03em;
-  border-bottom:2px solid rgba(245,200,66,.3);
+  background:#1e0808;color:var(--gold);font-weight:700;
+  padding:9px 10px;text-align:right;white-space:nowrap;
+  border-bottom:1px solid var(--border);letter-spacing:.04em;
 }
 .summary-table th:first-child{text-align:left}
 .summary-table td{
-  padding:10px 10px;border-bottom:1px solid var(--border);
+  padding:9px 10px;border-bottom:1px solid rgba(92,32,32,.2);
   text-align:right;color:var(--text);white-space:nowrap;
 }
-.summary-table td:first-child{text-align:left;font-weight:600;color:var(--text)}
+.summary-table td:first-child{text-align:left;font-weight:600}
 .summary-table tr:last-child td{border-bottom:none}
-.summary-table tr:hover td{background:rgba(255,255,255,.03)}
 .summary-table .total-row td{
-  background:rgba(245,200,66,.08);
-  font-weight:800;color:var(--gold);
-  border-top:2px solid rgba(245,200,66,.25);
+  background:rgba(212,168,50,.08);font-weight:800;color:var(--gold2);
+  border-top:1px solid var(--gold-dim);
 }
-.summary-table .total-row td:first-child{color:var(--gold)}
-.val-zero{color:#3a2a50 !important;font-weight:400 !important}
+.val-zero{color:#3a1a1a!important;font-weight:400!important}
 
-/* ─── 印刷スタイル ─── */
+/* ─── 印刷 ─── */
 @media print{
   body{background:#fff;color:#000;padding:0}
-  header,  .tabs, #tab-input, #tab-records, #tab-staff,
-  .month-selector .btn-print{display:none!important}
+  header,.tabs,#tab-input,#tab-records,#tab-staff,.month-selector .btn-print{display:none!important}
   #tab-monthly{display:block!important;padding:0}
   .print-header{display:block!important}
-  .card{background:#fff;border:none;border-radius:0;padding:0}
+  .card{background:#fff;border:none;padding:0}
+  .card::before{display:none}
   .card-title{color:#000}
-  .summary-wrap{overflow:visible}
+  .summary-wrap{overflow:visible;border:1px solid #ccc}
   .summary-table{min-width:unset;font-size:11px}
-  .summary-table th{background:#f0e8ff;color:#000;border-bottom:2px solid #000}
-  .summary-table td{color:#000;border-bottom:1px solid #ddd}
+  .summary-table th{background:#f5eedd;color:#000;border-bottom:1px solid #999}
+  .summary-table td{color:#000;border-bottom:1px solid #eee}
   .summary-table .total-row td{background:#fff8e0;color:#000}
   .val-zero{color:#bbb!important}
 }
 .print-header{display:none;text-align:center;margin-bottom:16px}
 .print-header h2{font-size:18px;font-weight:800;margin-bottom:2px}
 .print-header p{font-size:12px;color:#666}
+
+/* ─── スクロールバー ─── */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(92,32,32,.5);border-radius:2px}
 </style>
 </head>
 <body>
 
 <header>
   <h1>まぶだち</h1>
-  <p>キャスト インセンティブ管理</p>
+  <div class="sub">CAST INCENTIVE MANAGER</div>
 </header>
 
-<!-- タブ -->
 <div class="tabs">
   <div class="tab active" onclick="switchTab('input')">入力</div>
   <div class="tab" onclick="switchTab('records')">記録</div>
@@ -237,7 +393,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   <div class="tab" onclick="switchTab('staff')">スタッフ</div>
 </div>
 
-<!-- ───────────── 入力タブ ───────────── -->
+<!-- ───────── 入力タブ ───────── -->
 <div id="tab-input" class="section active">
 
   <div class="card">
@@ -252,66 +408,102 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     </div>
   </div>
 
+  <!-- ドリンクバック -->
   <div class="card">
     <div class="card-title">ドリンクバック</div>
     <div class="grid2">
       <div class="field">
         <label>キャストドリンク <span class="hint">×¥300</span></label>
-        <input type="number" id="castDrink" value="0" min="0" placeholder="0">
+        <div class="input-unit">
+          <input type="number" id="castDrink" value="0" min="0" placeholder="0" oninput="onDrinkChange()">
+          <span class="unit">杯</span>
+        </div>
       </div>
       <div class="field">
         <label>ショット <span class="hint">×¥500</span></label>
-        <input type="number" id="shotDrink" value="0" min="0" placeholder="0">
+        <div class="input-unit">
+          <input type="number" id="shotDrink" value="0" min="0" placeholder="0" oninput="onDrinkChange()">
+          <span class="unit">杯</span>
+        </div>
       </div>
+    </div>
+    <div class="breakdown-item" style="margin-top:8px">
+      <span class="lbl" style="font-size:12px">ドリンクバック合計</span>
+      <span class="val" id="drinkSubtotal" style="font-size:14px">¥0</span>
     </div>
   </div>
 
+  <!-- シャンパンバック -->
   <div class="card">
-    <div class="card-title">その他バック</div>
-    <div class="grid2">
-      <div class="field">
-        <label>シャンパンバック <span class="hint">（円）</span></label>
-        <input type="number" id="champBack" value="0" min="0" placeholder="0">
-      </div>
-      <div class="field">
-        <label>集客バック <span class="hint">（円）</span></label>
-        <input type="number" id="salesBack" value="0" min="0" placeholder="0">
-      </div>
+    <div class="card-title">シャンパンバック</div>
+    <div id="champRows" class="champ-rows"></div>
+    <button class="btn-champ-add" onclick="addChampRow()">＋ 銘柄を追加</button>
+    <div class="breakdown-item" style="margin-top:10px">
+      <span class="lbl" style="font-size:12px">シャンパンバック合計</span>
+      <span class="val" id="champSubtotal" style="font-size:14px">¥0</span>
     </div>
   </div>
 
-  <button class="btn-calc" onclick="calculate()">計 算 す る</button>
+  <!-- 集客バック -->
+  <div class="card">
+    <div class="card-title">集客バック</div>
+    <div class="field">
+      <label>会計金額 <span class="hint">（円）</span></label>
+      <div class="input-unit">
+        <input type="number" id="totalBill" value="0" min="0" placeholder="0" oninput="onBillChange()">
+        <span class="unit" style="font-size:11px">円</span>
+      </div>
+    </div>
+    <div class="sales-calc">
+      集客バック（×5%）＝ <strong id="salesBackPreview">¥0</strong>
+    </div>
+    <div style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.6;font-family:-apple-system,sans-serif">
+      ※集客バックはドリンクバック＋シャンパンバックを上回る場合のみ適用
+    </div>
+  </div>
+
+  <button class="btn-calc" onclick="calculate()">計　算　す　る</button>
 
   <!-- 結果 -->
   <div id="resultBox">
-    <div class="result-title">RESULT</div>
-    <div class="breakdown-item"><span class="lbl">キャストドリンク</span><span class="val" id="r_cast">¥0</span></div>
-    <div class="breakdown-item"><span class="lbl">ショット</span><span class="val" id="r_shot">¥0</span></div>
-    <div class="breakdown-item"><span class="lbl">シャンパンバック</span><span class="val" id="r_champ">¥0</span></div>
-    <div class="breakdown-item"><span class="lbl">集客バック</span><span class="val" id="r_sales">¥0</span></div>
-    <div class="total-area">
-      <div class="total-lbl">合 計 インセンティブ</div>
-      <div class="total-num" id="r_total"><small>¥</small>0</div>
+    <div class="result-header">
+      <p>━━ RESULT ━━</p>
     </div>
-    <button class="btn-save" onclick="saveRecord()">この記録を保存する</button>
+    <div class="result-body">
+      <div class="breakdown-item"><span class="lbl">キャストドリンク</span><span class="val" id="r_cast">¥0</span></div>
+      <div class="breakdown-item"><span class="lbl">ショット</span><span class="val" id="r_shot">¥0</span></div>
+      <div class="breakdown-item"><span class="lbl">シャンパンバック</span><span class="val" id="r_champ">¥0</span></div>
+      <div class="breakdown-item"><span class="lbl">ドリンク＋シャンパン 合計</span><span class="val" id="r_drinkchamp">¥0</span></div>
+      <div class="breakdown-item"><span class="lbl">集客バック（会計×5%）</span><span class="val" id="r_sales">¥0</span></div>
+
+      <!-- 採用判定 -->
+      <div class="verdict" id="verdictBox">
+        <div class="verdict-title" id="verdictTitle"></div>
+        <div class="verdict-desc" id="verdictDesc"></div>
+        <div class="verdict-note">※集客バックはドリンクバック＋シャンパンバックを上回る場合のみ適用</div>
+      </div>
+
+      <div class="total-area">
+        <div class="total-lbl">採用インセンティブ合計</div>
+        <div class="total-num" id="r_total"><small>¥</small>0</div>
+      </div>
+      <button class="btn-save" onclick="saveRecord()">この記録を保存する</button>
+    </div>
   </div>
 
 </div>
 
-<!-- ───────────── 記録タブ ───────────── -->
+<!-- ───────── 記録タブ ───────── -->
 <div id="tab-records" class="section">
   <div id="recordsList"></div>
 </div>
 
-<!-- ───────────── 月間集計タブ ───────────── -->
+<!-- ───────── 月集計タブ ───────── -->
 <div id="tab-monthly" class="section">
-
-  <!-- 印刷時のみ表示するヘッダー -->
   <div class="print-header">
     <h2>スナック まぶだち</h2>
     <p id="printSubtitle">月間インセンティブ集計</p>
   </div>
-
   <div class="card">
     <div class="card-title">月間集計</div>
     <div class="month-selector">
@@ -322,9 +514,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <table class="summary-table" id="summaryTable">
         <thead>
           <tr>
-            <th>キャスト名</th>
-            <th>キャストDrink</th>
-            <th>ショット</th>
+            <th>キャスト</th>
+            <th>Drink</th>
+            <th>Shot</th>
             <th>シャンパン</th>
             <th>集客</th>
             <th>合計</th>
@@ -335,10 +527,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     </div>
     <div class="empty-msg" id="summaryEmpty" style="display:none">この月の記録がありません</div>
   </div>
-
 </div>
 
-<!-- ───────────── スタッフタブ ───────────── -->
+<!-- ───────── スタッフタブ ───────── -->
 <div id="tab-staff" class="section">
   <div class="card">
     <div class="card-title">スタッフ一覧</div>
@@ -351,48 +542,57 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 </div>
 
 <script>
-// ─── State ───────────────────────────────────────────
+// ─── シャンパン銘柄マスタ ─────────────────────────
+const CHAMPAGNES = [
+  { name:'テタンジェ',         price:35000,  rate:0.20 },
+  { name:'ローランペリエ',     price:30000,  rate:0.20 },
+  { name:'ドン・ペリニヨン',   price:85000,  rate:0.20 },
+  { name:'ベル・エポック',     price:75000,  rate:0.20 },
+  { name:'ベル・エポック・ロゼ',price:180000, rate:0.20 },
+  { name:'クリスタル',         price:200000, rate:0.20 },
+  { name:'ペリエ・ジュエ',     price:30000,  rate:0.20 },
+  { name:'クリュッグ',         price:150000, rate:0.20 },
+  { name:'オリシャン',         price:30000,  rate:0.50 },
+];
+
+// ─── State ────────────────────────────────────────
 let staffList = JSON.parse(localStorage.getItem('mb_staff') || '["あき","みく","るな"]');
 let records   = JSON.parse(localStorage.getItem('mb_records') || '[]');
+let champRowId = 0;
 
-// ─── 初期化 ──────────────────────────────────────────
+// ─── 初期化 ───────────────────────────────────────
 (function init(){
-  // 今日の日付をデフォルトに
   const today = new Date();
   const yyyy  = today.getFullYear();
   const mm    = String(today.getMonth()+1).padStart(2,'0');
   const dd    = String(today.getDate()).padStart(2,'0');
   document.getElementById('dateInput').value = `${yyyy}-${mm}-${dd}`;
-
   renderStaff();
-  renderRecords();
+  addChampRow(); // 最初の1行
 })();
 
-// ─── タブ切替 ────────────────────────────────────────
+// ─── タブ ─────────────────────────────────────────
 function switchTab(name){
-  document.querySelectorAll('.tab').forEach((t,i)=>{
-    const tabs = ['input','records','monthly','staff'];
-    t.classList.toggle('active', tabs[i] === name);
-  });
+  const names = ['input','records','monthly','staff'];
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active', names[i]===name));
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
-  if(name === 'records') renderRecords();
-  if(name === 'monthly') renderMonthlySummary();
-  if(name === 'staff')   renderStaffTab();
+  if(name==='records') renderRecords();
+  if(name==='monthly') renderMonthlySummary();
+  if(name==='staff')   renderStaffTab();
 }
 
-// ─── スタッフ管理 ────────────────────────────────────
+// ─── スタッフ ──────────────────────────────────────
 function saveStaff(){ localStorage.setItem('mb_staff', JSON.stringify(staffList)); }
 
 function renderStaff(){
-  // select
   const sel = document.getElementById('staffSelect');
   const cur = sel.value;
   sel.innerHTML = '<option value="">選択してください</option>';
   staffList.forEach(n=>{
     const o = document.createElement('option');
     o.value = o.textContent = n;
-    if(n === cur) o.selected = true;
+    if(n===cur) o.selected = true;
     sel.appendChild(o);
   });
 }
@@ -400,7 +600,7 @@ function renderStaff(){
 function renderStaffTab(){
   const ul = document.getElementById('staffList');
   ul.innerHTML = '';
-  if(staffList.length === 0){
+  if(!staffList.length){
     ul.innerHTML = '<li style="color:var(--muted);font-size:13px;padding:8px 0">スタッフがいません</li>';
     return;
   }
@@ -413,127 +613,259 @@ function renderStaffTab(){
 }
 
 function addStaff(){
-  const inp = document.getElementById('newStaffName');
+  const inp  = document.getElementById('newStaffName');
   const name = inp.value.trim();
   if(!name) return;
   if(staffList.includes(name)){ alert('同じ名前がすでにいます'); return; }
   staffList.push(name);
-  saveStaff();
-  inp.value = '';
-  renderStaff();
-  renderStaffTab();
+  saveStaff(); inp.value = '';
+  renderStaff(); renderStaffTab();
 }
 
 function removeStaff(i){
   if(!confirm(`「${staffList[i]}」を削除しますか？`)) return;
   staffList.splice(i,1);
-  saveStaff();
-  renderStaff();
-  renderStaffTab();
+  saveStaff(); renderStaff(); renderStaffTab();
 }
 
-// ─── 計算 ────────────────────────────────────────────
+// ─── シャンパン行 ──────────────────────────────────
+function addChampRow(){
+  const id  = ++champRowId;
+  const div = document.createElement('div');
+  div.className = 'champ-row';
+  div.id = 'cr-'+id;
+
+  const opts = CHAMPAGNES.map(c=>{
+    const pct = Math.round(c.rate*100);
+    return `<option value="${c.name}">${c.name}（¥${c.price.toLocaleString()} / ${pct}%バック）</option>`;
+  }).join('');
+
+  div.innerHTML = `
+    <button class="btn-champ-del" onclick="removeChampRow(${id})">×</button>
+    <div class="champ-row-grid">
+      <div class="field" style="margin:0">
+        <label>銘柄</label>
+        <select id="cs-${id}" onchange="calcChampRow(${id})">${opts}</select>
+      </div>
+      <div class="field" style="margin:0">
+        <label>本数</label>
+        <div class="input-unit">
+          <input type="number" id="cc-${id}" value="1" min="0" placeholder="0" oninput="calcChampRow(${id})" style="padding-right:30px">
+          <span class="unit">本</span>
+        </div>
+      </div>
+    </div>
+    <div class="champ-row-result" id="cr-res-${id}">計算中…</div>`;
+  document.getElementById('champRows').appendChild(div);
+  calcChampRow(id);
+}
+
+function removeChampRow(id){
+  const el = document.getElementById('cr-'+id);
+  if(el) el.remove();
+  updateChampSubtotal();
+}
+
+function calcChampRow(id){
+  const sel   = document.getElementById('cs-'+id);
+  const count = parseFloat(document.getElementById('cc-'+id).value)||0;
+  const brand = CHAMPAGNES.find(c=>c.name===sel.value);
+  if(!brand){ document.getElementById('cr-res-'+id).textContent=''; return; }
+  const amt = brand.price * brand.rate * count;
+  const pct = Math.round(brand.rate*100);
+  document.getElementById('cr-res-'+id).textContent =
+    count===0 ? '' : `¥${brand.price.toLocaleString()} × ${count}本 × ${pct}% ＝ ¥${Math.floor(amt).toLocaleString()}`;
+  updateChampSubtotal();
+}
+
+function getChampTotal(){
+  let total = 0;
+  document.querySelectorAll('.champ-row').forEach(row=>{
+    const id    = row.id.replace('cr-','');
+    const sel   = document.getElementById('cs-'+id);
+    const count = parseFloat(document.getElementById('cc-'+id).value)||0;
+    const brand = CHAMPAGNES.find(c=>c.name===sel?.value);
+    if(brand) total += brand.price * brand.rate * count;
+  });
+  return total;
+}
+
+function getChampRows(){
+  const rows = [];
+  document.querySelectorAll('.champ-row').forEach(row=>{
+    const id    = row.id.replace('cr-','');
+    const sel   = document.getElementById('cs-'+id);
+    const count = parseFloat(document.getElementById('cc-'+id).value)||0;
+    const brand = CHAMPAGNES.find(c=>c.name===sel?.value);
+    if(brand && count>0) rows.push({ brand:brand.name, price:brand.price, rate:brand.rate, count, incentive: brand.price*brand.rate*count });
+  });
+  return rows;
+}
+
+function updateChampSubtotal(){
+  const t = getChampTotal();
+  const el = document.getElementById('champSubtotal');
+  el.textContent = '¥'+Math.floor(t).toLocaleString();
+  el.className = 'val'+(t===0?' zero':'');
+}
+
+// ─── ドリンク変化 ──────────────────────────────────
+function onDrinkChange(){
+  const cast = (parseFloat(document.getElementById('castDrink').value)||0)*300;
+  const shot = (parseFloat(document.getElementById('shotDrink').value)||0)*500;
+  const el = document.getElementById('drinkSubtotal');
+  const t = cast+shot;
+  el.textContent = '¥'+t.toLocaleString();
+  el.className = 'val'+(t===0?' zero':'');
+}
+
+function onBillChange(){
+  const bill = parseFloat(document.getElementById('totalBill').value)||0;
+  const back = bill*0.05;
+  document.getElementById('salesBackPreview').textContent = '¥'+Math.floor(back).toLocaleString();
+}
+
+// ─── 計算 ─────────────────────────────────────────
 function getN(id){ return parseFloat(document.getElementById(id).value)||0; }
 function fmt(n){ return '¥'+Math.floor(n).toLocaleString('ja-JP'); }
 
 function calculate(){
-  const castAmt  = getN('castDrink') * 300;
-  const shotAmt  = getN('shotDrink') * 500;
-  const champ    = getN('champBack');
-  const sales    = getN('salesBack');
-  const total    = castAmt + shotAmt + champ + sales;
+  const castAmt   = getN('castDrink')*300;
+  const shotAmt   = getN('shotDrink')*500;
+  const champAmt  = getChampTotal();
+  const bill      = getN('totalBill');
+  const salesAmt  = bill*0.05;
+  const drinkChampTotal = castAmt+shotAmt+champAmt;
 
-  const setVal = (id, n)=>{
+  const setVal = (id,n,force)=>{
     const el = document.getElementById(id);
     el.textContent = fmt(n);
-    el.className = 'val' + (n===0?' zero':'');
+    el.className = 'val'+(n===0&&!force?' zero':'');
   };
   setVal('r_cast',  castAmt);
   setVal('r_shot',  shotAmt);
-  setVal('r_champ', champ);
-  setVal('r_sales', sales);
-  document.getElementById('r_total').innerHTML =
-    '<small>¥</small>' + Math.floor(total).toLocaleString('ja-JP');
+  setVal('r_champ', champAmt);
+  setVal('r_drinkchamp', drinkChampTotal, true);
+  setVal('r_sales', salesAmt);
 
-  const box = document.getElementById('resultBox');
-  box.style.display = 'block';
-  box.scrollIntoView({behavior:'smooth', block:'nearest'});
+  // 採用判定
+  const useSales    = salesAmt > drinkChampTotal;
+  const adoptedAmt  = useSales ? salesAmt : drinkChampTotal;
+  const box         = document.getElementById('verdictBox');
+  const title       = document.getElementById('verdictTitle');
+  const desc        = document.getElementById('verdictDesc');
+
+  // アクティブ値をハイライト
+  document.getElementById('r_drinkchamp').className = 'val active-val'+(drinkChampTotal===0?' zero':'');
+  document.getElementById('r_sales').className      = 'val'+(salesAmt===0?' zero':'');
+
+  if(useSales){
+    box.className     = 'verdict adopted-sales';
+    title.textContent = '▶ 集客バック採用';
+    desc.textContent  = `集客バック（${fmt(salesAmt)}）がドリンク＋シャンパン（${fmt(drinkChampTotal)}）を上回りました`;
+    document.getElementById('r_drinkchamp').className = 'val zero';
+    document.getElementById('r_sales').className      = 'val active-val';
+  } else {
+    box.className     = 'verdict adopted-drink';
+    title.textContent = '▶ ドリンク＋シャンパンバック採用';
+    desc.textContent  = `ドリンク＋シャンパン（${fmt(drinkChampTotal)}）が集客バック（${fmt(salesAmt)}）以上です`;
+    document.getElementById('r_sales').className      = 'val zero';
+  }
+
+  document.getElementById('r_total').innerHTML =
+    '<small>¥</small>'+Math.floor(adoptedAmt).toLocaleString();
+
+  const resultBox = document.getElementById('resultBox');
+  resultBox.style.display = 'block';
+  resultBox.scrollIntoView({behavior:'smooth', block:'nearest'});
 }
 
-// ─── 記録保存 ────────────────────────────────────────
+// ─── 記録保存 ──────────────────────────────────────
 function saveRecord(){
   const date  = document.getElementById('dateInput').value;
   const staff = document.getElementById('staffSelect').value;
   if(!date)  { alert('日付を選択してください'); return; }
   if(!staff) { alert('スタッフを選択してください'); return; }
 
-  const rec = {
-    id:       Date.now(),
-    date,
-    staff,
-    castDrink: getN('castDrink'),
-    shotDrink: getN('shotDrink'),
-    champBack: getN('champBack'),
-    salesBack: getN('salesBack'),
-    total:     getN('castDrink')*300 + getN('shotDrink')*500 + getN('champBack') + getN('salesBack'),
-  };
+  const castDrink  = getN('castDrink');
+  const shotDrink  = getN('shotDrink');
+  const champRows  = getChampRows();
+  const bill       = getN('totalBill');
+  const castAmt    = castDrink*300;
+  const shotAmt    = shotDrink*500;
+  const champAmt   = getChampTotal();
+  const salesAmt   = bill*0.05;
+  const drinkChamp = castAmt+shotAmt+champAmt;
+  const useSales   = salesAmt > drinkChamp;
+  const adopted    = useSales ? salesAmt : drinkChamp;
 
+  const rec = {
+    id: Date.now(), date, staff,
+    castDrink, shotDrink, champRows, bill,
+    castAmt, shotAmt, champAmt, salesAmt,
+    adoptedType: useSales ? 'sales' : 'drink_champ',
+    total: adopted,
+  };
   records.push(rec);
   localStorage.setItem('mb_records', JSON.stringify(records));
 
-  // フォームリセット
-  ['castDrink','shotDrink','champBack','salesBack'].forEach(id=>document.getElementById(id).value='0');
+  // リセット
+  document.getElementById('castDrink').value  = '0';
+  document.getElementById('shotDrink').value  = '0';
+  document.getElementById('totalBill').value  = '0';
   document.getElementById('staffSelect').value = '';
   document.getElementById('resultBox').style.display = 'none';
+  document.getElementById('champRows').innerHTML = '';
+  champRowId = 0; addChampRow();
+  onDrinkChange(); onBillChange(); updateChampSubtotal();
 
   alert(`${staff} さんの記録を保存しました！`);
   switchTab('records');
 }
 
-// ─── 記録一覧表示 ────────────────────────────────────
+// ─── 記録一覧 ──────────────────────────────────────
 function renderRecords(){
   const container = document.getElementById('recordsList');
-  if(records.length === 0){
+  if(!records.length){
     container.innerHTML = '<div class="empty-msg">まだ記録がありません</div>';
     return;
   }
-
-  // 日付でグループ化（新しい順）
   const groups = {};
-  [...records].reverse().forEach(r=>{
-    if(!groups[r.date]) groups[r.date] = [];
-    groups[r.date].push(r);
-  });
-
+  [...records].reverse().forEach(r=>{ (groups[r.date]=groups[r.date]||[]).push(r); });
   container.innerHTML = '';
   Object.keys(groups).sort((a,b)=>b.localeCompare(a)).forEach(date=>{
     const [y,m,d] = date.split('-');
-    const label = `${y}年${parseInt(m)}月${parseInt(d)}日`;
-    const group = document.createElement('div');
-    group.className = 'rec-group';
-    group.innerHTML = `<div class="rec-date-head">${label}</div>`;
-
+    const g = document.createElement('div');
+    g.className = 'rec-group';
+    g.innerHTML = `<div class="rec-date-head">${y}年${parseInt(m)}月${parseInt(d)}日</div>`;
     groups[date].forEach(r=>{
+      const isSales  = r.adoptedType==='sales';
+      const adoptTag = isSales ? '集客バック採用' : 'ドリンク＋シャンパン採用';
+      const champSummary = (r.champRows||[]).length>0
+        ? (r.champRows||[]).map(c=>`${c.brand}×${c.count}`).join('、')
+        : null;
+      const tags = [
+        {lbl:`Drink ${r.castDrink}杯`, zero:r.castDrink===0},
+        {lbl:`Shot ${r.shotDrink}杯`,  zero:r.shotDrink===0},
+        champSummary ? {lbl:champSummary, zero:false} : null,
+        {lbl:`集客 ¥${(r.bill||0).toLocaleString()}`, zero:!r.bill},
+      ].filter(Boolean).map(t=>`<span class="tag${t.zero?' zero':''}">${t.lbl}</span>`).join('');
+
       const card = document.createElement('div');
       card.className = 'rec-card';
-
-      const tags = [
-        {lbl:`キャスト ${r.castDrink}杯`, zero: r.castDrink===0},
-        {lbl:`ショット ${r.shotDrink}杯`,  zero: r.shotDrink===0},
-        {lbl:`シャンパン ¥${r.champBack.toLocaleString()}`, zero: r.champBack===0},
-        {lbl:`集客 ¥${r.salesBack.toLocaleString()}`,      zero: r.salesBack===0},
-      ].map(t=>`<span class="tag${t.zero?' zero':''}">${t.lbl}</span>`).join('');
-
       card.innerHTML = `
         <button class="btn-rec-del" onclick="deleteRecord(${r.id})">×</button>
         <div class="rec-top">
           <span class="rec-name">${r.staff}</span>
           <span class="rec-total">¥${Math.floor(r.total).toLocaleString()}</span>
         </div>
-        <div class="rec-detail">${tags}</div>`;
-      group.appendChild(card);
+        <div class="rec-detail">
+          ${tags}
+          <span class="tag adopted">${adoptTag}</span>
+        </div>`;
+      g.appendChild(card);
     });
-    container.appendChild(group);
+    container.appendChild(g);
   });
 }
 
@@ -544,18 +876,14 @@ function deleteRecord(id){
   renderRecords();
 }
 
-// ─── 月間集計 ────────────────────────────────────────
+// ─── 月間集計 ──────────────────────────────────────
 function buildMonthOptions(){
   const sel = document.getElementById('monthSelect');
   const cur = sel.value;
-
-  // 記録から年月一覧を収集（記録がなければ今月）
   const months = new Set();
-  records.forEach(r=> months.add(r.date.slice(0,7)));
+  records.forEach(r=>months.add(r.date.slice(0,7)));
   const today = new Date();
-  const thisMonth = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
-  months.add(thisMonth);
-
+  months.add(`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`);
   const sorted = [...months].sort((a,b)=>b.localeCompare(a));
   sel.innerHTML = '';
   sorted.forEach(ym=>{
@@ -563,29 +891,21 @@ function buildMonthOptions(){
     const o = document.createElement('option');
     o.value = ym;
     o.textContent = `${y}年${parseInt(m)}月`;
-    if(ym === cur) o.selected = true;
+    if(ym===cur) o.selected = true;
     sel.appendChild(o);
   });
-  // 選択値が消えた場合は先頭にする
   if(!sel.value) sel.value = sorted[0];
 }
 
 function renderMonthlySummary(){
   buildMonthOptions();
-
-  const ym   = document.getElementById('monthSelect').value;
-  const [y,m]= ym.split('-');
-  const label= `${y}年${parseInt(m)}月`;
-
-  // 印刷ヘッダー更新
-  document.getElementById('printSubtitle').textContent = `${label} インセンティブ集計`;
-
-  // 該当月の記録を絞り込み
-  const monthly = records.filter(r=> r.date.startsWith(ym));
+  const ym    = document.getElementById('monthSelect').value;
+  const [y,m] = ym.split('-');
+  document.getElementById('printSubtitle').textContent = `${y}年${parseInt(m)}月 インセンティブ集計`;
+  const monthly  = records.filter(r=>r.date.startsWith(ym));
   const tbody    = document.getElementById('summaryBody');
   const emptyMsg = document.getElementById('summaryEmpty');
-
-  if(monthly.length === 0){
+  if(!monthly.length){
     tbody.innerHTML = '';
     emptyMsg.style.display = 'block';
     document.getElementById('summaryTable').style.display = 'none';
@@ -594,59 +914,44 @@ function renderMonthlySummary(){
   emptyMsg.style.display = 'none';
   document.getElementById('summaryTable').style.display = '';
 
-  // キャスト別に集計
   const map = {};
   monthly.forEach(r=>{
-    if(!map[r.staff]) map[r.staff] = {castDrink:0, shotDrink:0, champBack:0, salesBack:0};
-    map[r.staff].castDrink += r.castDrink * 300;
-    map[r.staff].shotDrink += r.shotDrink * 500;
-    map[r.staff].champBack += r.champBack;
-    map[r.staff].salesBack += r.salesBack;
+    if(!map[r.staff]) map[r.staff]={castAmt:0,shotAmt:0,champAmt:0,salesAmt:0,total:0};
+    const d = map[r.staff];
+    if(r.adoptedType==='sales'){
+      d.salesAmt += r.salesAmt||0;
+    } else {
+      d.castAmt  += r.castAmt||0;
+      d.shotAmt  += r.shotAmt||0;
+      d.champAmt += r.champAmt||0;
+    }
+    d.total += r.total||0;
   });
 
-  // 合計行
-  const grand = {castDrink:0, shotDrink:0, champBack:0, salesBack:0};
-
-  const fmtCell = n => n === 0
+  const grand = {castAmt:0,shotAmt:0,champAmt:0,salesAmt:0,total:0};
+  const fc = n => n===0
     ? `<td class="val-zero">—</td>`
     : `<td>¥${Math.floor(n).toLocaleString()}</td>`;
 
   tbody.innerHTML = '';
   Object.keys(map).sort().forEach(name=>{
     const d = map[name];
-    const tot = d.castDrink + d.shotDrink + d.champBack + d.salesBack;
-    grand.castDrink += d.castDrink;
-    grand.shotDrink += d.shotDrink;
-    grand.champBack += d.champBack;
-    grand.salesBack += d.salesBack;
-
+    grand.castAmt  += d.castAmt;
+    grand.shotAmt  += d.shotAmt;
+    grand.champAmt += d.champAmt;
+    grand.salesAmt += d.salesAmt;
+    grand.total    += d.total;
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${name}</td>
-      ${fmtCell(d.castDrink)}
-      ${fmtCell(d.shotDrink)}
-      ${fmtCell(d.champBack)}
-      ${fmtCell(d.salesBack)}
-      <td><strong>¥${Math.floor(tot).toLocaleString()}</strong></td>`;
+    tr.innerHTML = `<td>${name}</td>${fc(d.castAmt)}${fc(d.shotAmt)}${fc(d.champAmt)}${fc(d.salesAmt)}<td><strong>¥${Math.floor(d.total).toLocaleString()}</strong></td>`;
     tbody.appendChild(tr);
   });
-
-  // 合計行
-  const grandTotal = grand.castDrink + grand.shotDrink + grand.champBack + grand.salesBack;
   const tfoot = document.createElement('tr');
   tfoot.className = 'total-row';
-  tfoot.innerHTML = `
-    <td>合 計</td>
-    <td>¥${Math.floor(grand.castDrink).toLocaleString()}</td>
-    <td>¥${Math.floor(grand.shotDrink).toLocaleString()}</td>
-    <td>¥${Math.floor(grand.champBack).toLocaleString()}</td>
-    <td>¥${Math.floor(grand.salesBack).toLocaleString()}</td>
-    <td>¥${Math.floor(grandTotal).toLocaleString()}</td>`;
+  tfoot.innerHTML = `<td>合　計</td><td>¥${Math.floor(grand.castAmt).toLocaleString()}</td><td>¥${Math.floor(grand.shotAmt).toLocaleString()}</td><td>¥${Math.floor(grand.champAmt).toLocaleString()}</td><td>¥${Math.floor(grand.salesAmt).toLocaleString()}</td><td>¥${Math.floor(grand.total).toLocaleString()}</td>`;
   tbody.appendChild(tfoot);
 }
 
 function printSummary(){
-  // 月集計タブを強制表示してから印刷
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.getElementById('tab-monthly').classList.add('active');
   window.print();
