@@ -638,7 +638,7 @@ function addChampRow(){
   div.className = 'champ-row';
   div.id = 'cr-'+id;
 
-  const opts = CHAMPAGNES.map(c=>{
+  const opts = '<option value="">銘柄を選択</option>' + CHAMPAGNES.map(c=>{
     const pct = Math.round(c.rate*100);
     return `<option value="${c.name}">${c.name}（¥${c.price.toLocaleString()} / ${pct}%バック）</option>`;
   }).join('');
@@ -653,7 +653,7 @@ function addChampRow(){
       <div class="field" style="margin:0">
         <label>本数</label>
         <div class="input-unit">
-          <input type="number" id="cc-${id}" value="1" min="0" placeholder="0" oninput="calcChampRow(${id})" style="padding-right:30px">
+          <input type="number" id="cc-${id}" value="0" min="0" placeholder="0" oninput="calcChampRow(${id})" style="padding-right:30px">
           <span class="unit">本</span>
         </div>
       </div>
