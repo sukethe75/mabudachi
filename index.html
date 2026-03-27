@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>まぶだち｜インセンティブ管理</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#0f0720;
+  --card:#1c1030;
+  --card2:#231540;
+  --border:rgba(255,255,255,0.09);
+  --gold:#f5c842;
+  --gold2:#e8a020;
+  --purple:#9b6dff;
+  --muted:#7a6a98;
+  --text:#e8deff;
+  --sub:#b0a0cc;
+}
+
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  padding:0 0 60px;
+}
+
+/* ─── ヘッダー ─── */
+header{
+  background:linear-gradient(180deg,#1e0a3c 0%,var(--bg) 100%);
+  padding:28px 20px 20px;
+  text-align:center;
+  border-bottom:1px solid var(--border);
+}
+header h1{font-size:24px;font-weight:800;letter-spacing:.15em;color:var(--gold);text-shadow:0 0 18px rgba(245,200,66,.4)}
+header p{font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:.1em}
+
+/* ─── タブ ─── */
+.tabs{display:flex;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:10}
+.tab{flex:1;padding:13px 0;text-align:center;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;letter-spacing:.05em;transition:.2s;border-bottom:2px solid transparent}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+
+/* ─── セクション ─── */
+.section{display:none;padding:20px 16px}
+.section.active{display:block}
+
+/* ─── カード ─── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px 16px;margin-bottom:14px}
+.card-title{font-size:10px;font-weight:700;letter-spacing:.18em;color:var(--gold);margin-bottom:14px;display:flex;align-items:center;gap:7px}
+.card-title::before{content:'';width:3px;height:13px;background:var(--gold);border-radius:2px;display:inline-block}
+
+/* ─── フォーム要素 ─── */
+.field{margin-bottom:13px}
+.field:last-child{margin-bottom:0}
+label{display:block;font-size:12px;color:var(--sub);margin-bottom:5px}
+.hint{font-size:10px;color:var(--muted);margin-left:4px}
+
+input[type=date],
+input[type=number],
+input[type=text],
+select{
+  width:100%;
+  background:rgba(255,255,255,.06);
+  border:1px solid var(--border);
+  border-radius:10px;
+  color:var(--text);
+  font-size:16px;
+  padding:11px 13px;
+  outline:none;
+  transition:.2s;
+  -webkit-appearance:none;
+  appearance:none;
+}
+input:focus,select:focus{border-color:var(--gold);background:rgba(245,200,66,.06)}
+input[type=date]::-webkit-calendar-picker-indicator,
+input[type=date]::-webkit-inner-spin-button{filter:invert(.7);cursor:pointer}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a6a98' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
+
+/* ─── 2列グリッド ─── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* ─── 計算ボタン ─── */
+.btn-calc{
+  width:100%;padding:15px;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  border:none;border-radius:14px;
+  font-size:16px;font-weight:800;letter-spacing:.1em;
+  color:#0f0720;cursor:pointer;
+  box-shadow:0 4px 20px rgba(245,200,66,.28);
+  transition:.15s;
+}
+.btn-calc:active{opacity:.85;transform:scale(.98)}
+
+/* ─── 結果表示 ─── */
+#resultBox{
+  display:none;
+  background:linear-gradient(135deg,rgba(245,200,66,.1),rgba(155,109,255,.08));
+  border:1px solid rgba(245,200,66,.3);
+  border-radius:16px;padding:20px 16px;margin-top:14px;
+}
+.result-title{text-align:center;font-size:11px;letter-spacing:.18em;color:var(--gold);margin-bottom:16px;font-weight:700}
+.breakdown-item{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:14px}
+.breakdown-item:last-child{border-bottom:none}
+.breakdown-item .lbl{color:var(--muted)}
+.breakdown-item .val{font-weight:600;color:var(--text)}
+.breakdown-item .val.zero{color:#3a2a50}
+.total-area{background:rgba(245,200,66,.1);border-radius:12px;padding:16px;text-align:center;margin-top:14px}
+.total-lbl{font-size:11px;letter-spacing:.15em;color:var(--gold);margin-bottom:4px}
+.total-num{font-size:40px;font-weight:800;color:var(--gold);text-shadow:0 0 20px rgba(245,200,66,.35)}
+.total-num small{font-size:20px;font-weight:600}
+
+.btn-save{
+  width:100%;margin-top:12px;padding:13px;
+  background:var(--purple);border:none;border-radius:12px;
+  font-size:14px;font-weight:700;letter-spacing:.08em;color:#fff;
+  cursor:pointer;transition:.15s;
+}
+.btn-save:active{opacity:.85}
+
+/* ─── スタッフ管理 ─── */
+.staff-list{list-style:none}
+.staff-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:11px 12px;background:var(--card2);
+  border-radius:10px;margin-bottom:8px;font-size:14px;
+}
+.staff-item span{color:var(--text)}
+.btn-del{background:none;border:1px solid rgba(255,100,100,.3);border-radius:6px;padding:4px 10px;font-size:11px;color:#ff7070;cursor:pointer}
+.add-row{display:flex;gap:8px;margin-top:4px}
+.add-row input{flex:1}
+.btn-add{
+  padding:11px 16px;background:var(--purple);border:none;
+  border-radius:10px;font-size:14px;font-weight:700;color:#fff;cursor:pointer;white-space:nowrap;
+}
+
+/* ─── 記録一覧 ─── */
+.rec-group{margin-bottom:18px}
+.rec-date-head{
+  font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--purple);
+  padding:6px 4px;border-bottom:1px solid rgba(155,109,255,.2);margin-bottom:8px;
+}
+.rec-card{
+  background:var(--card2);border-radius:12px;padding:13px 14px;
+  margin-bottom:8px;position:relative;
+}
+.rec-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.rec-name{font-size:14px;font-weight:700;color:var(--text)}
+.rec-total{font-size:16px;font-weight:800;color:var(--gold)}
+.rec-detail{display:flex;flex-wrap:wrap;gap:6px}
+.tag{
+  font-size:10px;padding:3px 8px;border-radius:20px;
+  background:rgba(255,255,255,.06);color:var(--sub);
+}
+.tag.zero{opacity:.35}
+.btn-rec-del{
+  position:absolute;top:10px;right:10px;
+  background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:2px 6px;
+}
+.empty-msg{text-align:center;color:var(--muted);font-size:13px;padding:40px 0}
+
+/* ─── スクロールバー ─── */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px}
+
+/* ─── 月間集計 ─── */
+.month-selector{display:flex;gap:10px;align-items:center;margin-bottom:18px}
+.month-selector select{flex:1}
+.btn-print{
+  padding:11px 16px;background:var(--card2);border:1px solid var(--border);
+  border-radius:10px;font-size:13px;font-weight:600;color:var(--sub);
+  cursor:pointer;white-space:nowrap;transition:.15s;flex-shrink:0;
+}
+.btn-print:active{background:var(--card)}
+
+.summary-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:12px}
+.summary-table{
+  width:100%;border-collapse:collapse;font-size:13px;min-width:480px;
+}
+.summary-table th{
+  background:#1e0a3c;color:var(--gold);font-weight:700;
+  padding:10px 10px;text-align:right;white-space:nowrap;letter-spacing:.03em;
+  border-bottom:2px solid rgba(245,200,66,.3);
+}
+.summary-table th:first-child{text-align:left}
+.summary-table td{
+  padding:10px 10px;border-bottom:1px solid var(--border);
+  text-align:right;color:var(--text);white-space:nowrap;
+}
+.summary-table td:first-child{text-align:left;font-weight:600;color:var(--text)}
+.summary-table tr:last-child td{border-bottom:none}
+.summary-table tr:hover td{background:rgba(255,255,255,.03)}
+.summary-table .total-row td{
+  background:rgba(245,200,66,.08);
+  font-weight:800;color:var(--gold);
+  border-top:2px solid rgba(245,200,66,.25);
+}
+.summary-table .total-row td:first-child{color:var(--gold)}
+.val-zero{color:#3a2a50 !important;font-weight:400 !important}
+
+/* ─── 印刷スタイル ─── */
+@media print{
+  body{background:#fff;color:#000;padding:0}
+  header,  .tabs, #tab-input, #tab-records, #tab-staff,
+  .month-selector .btn-print{display:none!important}
+  #tab-monthly{display:block!important;padding:0}
+  .print-header{display:block!important}
+  .card{background:#fff;border:none;border-radius:0;padding:0}
+  .card-title{color:#000}
+  .summary-wrap{overflow:visible}
+  .summary-table{min-width:unset;font-size:11px}
+  .summary-table th{background:#f0e8ff;color:#000;border-bottom:2px solid #000}
+  .summary-table td{color:#000;border-bottom:1px solid #ddd}
+  .summary-table .total-row td{background:#fff8e0;color:#000}
+  .val-zero{color:#bbb!important}
+}
+.print-header{display:none;text-align:center;margin-bottom:16px}
+.print-header h2{font-size:18px;font-weight:800;margin-bottom:2px}
+.print-header p{font-size:12px;color:#666}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>まぶだち</h1>
+  <p>キャスト インセンティブ管理</p>
+</header>
+
+<!-- タブ -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('input')">入力</div>
+  <div class="tab" onclick="switchTab('records')">記録</div>
+  <div class="tab" onclick="switchTab('monthly')">月集計</div>
+  <div class="tab" onclick="switchTab('staff')">スタッフ</div>
+</div>
+
+<!-- ───────────── 入力タブ ───────────── -->
+<div id="tab-input" class="section active">
+
+  <div class="card">
+    <div class="card-title">基本情報</div>
+    <div class="field">
+      <label>日付</label>
+      <input type="date" id="dateInput">
+    </div>
+    <div class="field">
+      <label>スタッフ</label>
+      <select id="staffSelect"><option value="">選択してください</option></select>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">ドリンクバック</div>
+    <div class="grid2">
+      <div class="field">
+        <label>キャストドリンク <span class="hint">×¥300</span></label>
+        <input type="number" id="castDrink" value="0" min="0" placeholder="0">
+      </div>
+      <div class="field">
+        <label>ショット <span class="hint">×¥500</span></label>
+        <input type="number" id="shotDrink" value="0" min="0" placeholder="0">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">その他バック</div>
+    <div class="grid2">
+      <div class="field">
+        <label>シャンパンバック <span class="hint">（円）</span></label>
+        <input type="number" id="champBack" value="0" min="0" placeholder="0">
+      </div>
+      <div class="field">
+        <label>集客バック <span class="hint">（円）</span></label>
+        <input type="number" id="salesBack" value="0" min="0" placeholder="0">
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-calc" onclick="calculate()">計 算 す る</button>
+
+  <!-- 結果 -->
+  <div id="resultBox">
+    <div class="result-title">RESULT</div>
+    <div class="breakdown-item"><span class="lbl">キャストドリンク</span><span class="val" id="r_cast">¥0</span></div>
+    <div class="breakdown-item"><span class="lbl">ショット</span><span class="val" id="r_shot">¥0</span></div>
+    <div class="breakdown-item"><span class="lbl">シャンパンバック</span><span class="val" id="r_champ">¥0</span></div>
+    <div class="breakdown-item"><span class="lbl">集客バック</span><span class="val" id="r_sales">¥0</span></div>
+    <div class="total-area">
+      <div class="total-lbl">合 計 インセンティブ</div>
+      <div class="total-num" id="r_total"><small>¥</small>0</div>
+    </div>
+    <button class="btn-save" onclick="saveRecord()">この記録を保存する</button>
+  </div>
+
+</div>
+
+<!-- ───────────── 記録タブ ───────────── -->
+<div id="tab-records" class="section">
+  <div id="recordsList"></div>
+</div>
+
+<!-- ───────────── 月間集計タブ ───────────── -->
+<div id="tab-monthly" class="section">
+
+  <!-- 印刷時のみ表示するヘッダー -->
+  <div class="print-header">
+    <h2>スナック まぶだち</h2>
+    <p id="printSubtitle">月間インセンティブ集計</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">月間集計</div>
+    <div class="month-selector">
+      <select id="monthSelect" onchange="renderMonthlySummary()"></select>
+      <button class="btn-print" onclick="printSummary()">印刷</button>
+    </div>
+    <div class="summary-wrap">
+      <table class="summary-table" id="summaryTable">
+        <thead>
+          <tr>
+            <th>キャスト名</th>
+            <th>キャストDrink</th>
+            <th>ショット</th>
+            <th>シャンパン</th>
+            <th>集客</th>
+            <th>合計</th>
+          </tr>
+        </thead>
+        <tbody id="summaryBody"></tbody>
+      </table>
+    </div>
+    <div class="empty-msg" id="summaryEmpty" style="display:none">この月の記録がありません</div>
+  </div>
+
+</div>
+
+<!-- ───────────── スタッフタブ ───────────── -->
+<div id="tab-staff" class="section">
+  <div class="card">
+    <div class="card-title">スタッフ一覧</div>
+    <ul class="staff-list" id="staffList"></ul>
+    <div class="add-row" style="margin-top:12px">
+      <input type="text" id="newStaffName" placeholder="新しいスタッフ名" maxlength="20">
+      <button class="btn-add" onclick="addStaff()">追加</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── State ───────────────────────────────────────────
+let staffList = JSON.parse(localStorage.getItem('mb_staff') || '["あき","みく","るな"]');
+let records   = JSON.parse(localStorage.getItem('mb_records') || '[]');
+
+// ─── 初期化 ──────────────────────────────────────────
+(function init(){
+  // 今日の日付をデフォルトに
+  const today = new Date();
+  const yyyy  = today.getFullYear();
+  const mm    = String(today.getMonth()+1).padStart(2,'0');
+  const dd    = String(today.getDate()).padStart(2,'0');
+  document.getElementById('dateInput').value = `${yyyy}-${mm}-${dd}`;
+
+  renderStaff();
+  renderRecords();
+})();
+
+// ─── タブ切替 ────────────────────────────────────────
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    const tabs = ['input','records','monthly','staff'];
+    t.classList.toggle('active', tabs[i] === name);
+  });
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  if(name === 'records') renderRecords();
+  if(name === 'monthly') renderMonthlySummary();
+  if(name === 'staff')   renderStaffTab();
+}
+
+// ─── スタッフ管理 ────────────────────────────────────
+function saveStaff(){ localStorage.setItem('mb_staff', JSON.stringify(staffList)); }
+
+function renderStaff(){
+  // select
+  const sel = document.getElementById('staffSelect');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">選択してください</option>';
+  staffList.forEach(n=>{
+    const o = document.createElement('option');
+    o.value = o.textContent = n;
+    if(n === cur) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+
+function renderStaffTab(){
+  const ul = document.getElementById('staffList');
+  ul.innerHTML = '';
+  if(staffList.length === 0){
+    ul.innerHTML = '<li style="color:var(--muted);font-size:13px;padding:8px 0">スタッフがいません</li>';
+    return;
+  }
+  staffList.forEach((name,i)=>{
+    const li = document.createElement('li');
+    li.className = 'staff-item';
+    li.innerHTML = `<span>${name}</span><button class="btn-del" onclick="removeStaff(${i})">削除</button>`;
+    ul.appendChild(li);
+  });
+}
+
+function addStaff(){
+  const inp = document.getElementById('newStaffName');
+  const name = inp.value.trim();
+  if(!name) return;
+  if(staffList.includes(name)){ alert('同じ名前がすでにいます'); return; }
+  staffList.push(name);
+  saveStaff();
+  inp.value = '';
+  renderStaff();
+  renderStaffTab();
+}
+
+function removeStaff(i){
+  if(!confirm(`「${staffList[i]}」を削除しますか？`)) return;
+  staffList.splice(i,1);
+  saveStaff();
+  renderStaff();
+  renderStaffTab();
+}
+
+// ─── 計算 ────────────────────────────────────────────
+function getN(id){ return parseFloat(document.getElementById(id).value)||0; }
+function fmt(n){ return '¥'+Math.floor(n).toLocaleString('ja-JP'); }
+
+function calculate(){
+  const castAmt  = getN('castDrink') * 300;
+  const shotAmt  = getN('shotDrink') * 500;
+  const champ    = getN('champBack');
+  const sales    = getN('salesBack');
+  const total    = castAmt + shotAmt + champ + sales;
+
+  const setVal = (id, n)=>{
+    const el = document.getElementById(id);
+    el.textContent = fmt(n);
+    el.className = 'val' + (n===0?' zero':'');
+  };
+  setVal('r_cast',  castAmt);
+  setVal('r_shot',  shotAmt);
+  setVal('r_champ', champ);
+  setVal('r_sales', sales);
+  document.getElementById('r_total').innerHTML =
+    '<small>¥</small>' + Math.floor(total).toLocaleString('ja-JP');
+
+  const box = document.getElementById('resultBox');
+  box.style.display = 'block';
+  box.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+// ─── 記録保存 ────────────────────────────────────────
+function saveRecord(){
+  const date  = document.getElementById('dateInput').value;
+  const staff = document.getElementById('staffSelect').value;
+  if(!date)  { alert('日付を選択してください'); return; }
+  if(!staff) { alert('スタッフを選択してください'); return; }
+
+  const rec = {
+    id:       Date.now(),
+    date,
+    staff,
+    castDrink: getN('castDrink'),
+    shotDrink: getN('shotDrink'),
+    champBack: getN('champBack'),
+    salesBack: getN('salesBack'),
+    total:     getN('castDrink')*300 + getN('shotDrink')*500 + getN('champBack') + getN('salesBack'),
+  };
+
+  records.push(rec);
+  localStorage.setItem('mb_records', JSON.stringify(records));
+
+  // フォームリセット
+  ['castDrink','shotDrink','champBack','salesBack'].forEach(id=>document.getElementById(id).value='0');
+  document.getElementById('staffSelect').value = '';
+  document.getElementById('resultBox').style.display = 'none';
+
+  alert(`${staff} さんの記録を保存しました！`);
+  switchTab('records');
+}
+
+// ─── 記録一覧表示 ────────────────────────────────────
+function renderRecords(){
+  const container = document.getElementById('recordsList');
+  if(records.length === 0){
+    container.innerHTML = '<div class="empty-msg">まだ記録がありません</div>';
+    return;
+  }
+
+  // 日付でグループ化（新しい順）
+  const groups = {};
+  [...records].reverse().forEach(r=>{
+    if(!groups[r.date]) groups[r.date] = [];
+    groups[r.date].push(r);
+  });
+
+  container.innerHTML = '';
+  Object.keys(groups).sort((a,b)=>b.localeCompare(a)).forEach(date=>{
+    const [y,m,d] = date.split('-');
+    const label = `${y}年${parseInt(m)}月${parseInt(d)}日`;
+    const group = document.createElement('div');
+    group.className = 'rec-group';
+    group.innerHTML = `<div class="rec-date-head">${label}</div>`;
+
+    groups[date].forEach(r=>{
+      const card = document.createElement('div');
+      card.className = 'rec-card';
+
+      const tags = [
+        {lbl:`キャスト ${r.castDrink}杯`, zero: r.castDrink===0},
+        {lbl:`ショット ${r.shotDrink}杯`,  zero: r.shotDrink===0},
+        {lbl:`シャンパン ¥${r.champBack.toLocaleString()}`, zero: r.champBack===0},
+        {lbl:`集客 ¥${r.salesBack.toLocaleString()}`,      zero: r.salesBack===0},
+      ].map(t=>`<span class="tag${t.zero?' zero':''}">${t.lbl}</span>`).join('');
+
+      card.innerHTML = `
+        <button class="btn-rec-del" onclick="deleteRecord(${r.id})">×</button>
+        <div class="rec-top">
+          <span class="rec-name">${r.staff}</span>
+          <span class="rec-total">¥${Math.floor(r.total).toLocaleString()}</span>
+        </div>
+        <div class="rec-detail">${tags}</div>`;
+      group.appendChild(card);
+    });
+    container.appendChild(group);
+  });
+}
+
+function deleteRecord(id){
+  if(!confirm('この記録を削除しますか？')) return;
+  records = records.filter(r=>r.id!==id);
+  localStorage.setItem('mb_records', JSON.stringify(records));
+  renderRecords();
+}
+
+// ─── 月間集計 ────────────────────────────────────────
+function buildMonthOptions(){
+  const sel = document.getElementById('monthSelect');
+  const cur = sel.value;
+
+  // 記録から年月一覧を収集（記録がなければ今月）
+  const months = new Set();
+  records.forEach(r=> months.add(r.date.slice(0,7)));
+  const today = new Date();
+  const thisMonth = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+  months.add(thisMonth);
+
+  const sorted = [...months].sort((a,b)=>b.localeCompare(a));
+  sel.innerHTML = '';
+  sorted.forEach(ym=>{
+    const [y,m] = ym.split('-');
+    const o = document.createElement('option');
+    o.value = ym;
+    o.textContent = `${y}年${parseInt(m)}月`;
+    if(ym === cur) o.selected = true;
+    sel.appendChild(o);
+  });
+  // 選択値が消えた場合は先頭にする
+  if(!sel.value) sel.value = sorted[0];
+}
+
+function renderMonthlySummary(){
+  buildMonthOptions();
+
+  const ym   = document.getElementById('monthSelect').value;
+  const [y,m]= ym.split('-');
+  const label= `${y}年${parseInt(m)}月`;
+
+  // 印刷ヘッダー更新
+  document.getElementById('printSubtitle').textContent = `${label} インセンティブ集計`;
+
+  // 該当月の記録を絞り込み
+  const monthly = records.filter(r=> r.date.startsWith(ym));
+  const tbody    = document.getElementById('summaryBody');
+  const emptyMsg = document.getElementById('summaryEmpty');
+
+  if(monthly.length === 0){
+    tbody.innerHTML = '';
+    emptyMsg.style.display = 'block';
+    document.getElementById('summaryTable').style.display = 'none';
+    return;
+  }
+  emptyMsg.style.display = 'none';
+  document.getElementById('summaryTable').style.display = '';
+
+  // キャスト別に集計
+  const map = {};
+  monthly.forEach(r=>{
+    if(!map[r.staff]) map[r.staff] = {castDrink:0, shotDrink:0, champBack:0, salesBack:0};
+    map[r.staff].castDrink += r.castDrink * 300;
+    map[r.staff].shotDrink += r.shotDrink * 500;
+    map[r.staff].champBack += r.champBack;
+    map[r.staff].salesBack += r.salesBack;
+  });
+
+  // 合計行
+  const grand = {castDrink:0, shotDrink:0, champBack:0, salesBack:0};
+
+  const fmtCell = n => n === 0
+    ? `<td class="val-zero">—</td>`
+    : `<td>¥${Math.floor(n).toLocaleString()}</td>`;
+
+  tbody.innerHTML = '';
+  Object.keys(map).sort().forEach(name=>{
+    const d = map[name];
+    const tot = d.castDrink + d.shotDrink + d.champBack + d.salesBack;
+    grand.castDrink += d.castDrink;
+    grand.shotDrink += d.shotDrink;
+    grand.champBack += d.champBack;
+    grand.salesBack += d.salesBack;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${name}</td>
+      ${fmtCell(d.castDrink)}
+      ${fmtCell(d.shotDrink)}
+      ${fmtCell(d.champBack)}
+      ${fmtCell(d.salesBack)}
+      <td><strong>¥${Math.floor(tot).toLocaleString()}</strong></td>`;
+    tbody.appendChild(tr);
+  });
+
+  // 合計行
+  const grandTotal = grand.castDrink + grand.shotDrink + grand.champBack + grand.salesBack;
+  const tfoot = document.createElement('tr');
+  tfoot.className = 'total-row';
+  tfoot.innerHTML = `
+    <td>合 計</td>
+    <td>¥${Math.floor(grand.castDrink).toLocaleString()}</td>
+    <td>¥${Math.floor(grand.shotDrink).toLocaleString()}</td>
+    <td>¥${Math.floor(grand.champBack).toLocaleString()}</td>
+    <td>¥${Math.floor(grand.salesBack).toLocaleString()}</td>
+    <td>¥${Math.floor(grandTotal).toLocaleString()}</td>`;
+  tbody.appendChild(tfoot);
+}
+
+function printSummary(){
+  // 月集計タブを強制表示してから印刷
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('tab-monthly').classList.add('active');
+  window.print();
+}
+</script>
+</body>
+</html>
