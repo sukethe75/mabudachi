@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>まぶだち｜インセンティブ管理</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 
@@ -376,6 +377,29 @@ select{
 .print-header h2{font-size:18px;font-weight:800;margin-bottom:2px}
 .print-header p{font-size:12px;color:#666}
 
+/* ─── 履歴セクション ─── */
+.history-section{margin-top:20px}
+.history-list{display:flex;flex-direction:column;gap:8px}
+.history-item{
+  background:#fff;border:1px solid var(--border);border-radius:10px;
+  padding:10px 12px;display:flex;justify-content:space-between;align-items:center;
+  box-shadow:0 1px 4px rgba(224,119,0,.06);
+}
+.history-meta{display:flex;flex-direction:column;gap:2px}
+.history-date{font-size:11px;color:var(--muted);font-family:-apple-system,sans-serif;letter-spacing:.05em}
+.history-name{font-size:14px;font-weight:700;color:var(--cream)}
+.history-total{font-size:15px;font-weight:800;color:var(--gold2)}
+.history-loading,.history-empty,.history-error{
+  text-align:center;color:var(--muted);font-size:12px;padding:18px 0;
+  font-family:-apple-system,sans-serif;letter-spacing:.08em;
+}
+.history-error{color:var(--red)}
+.btn-history-reload{
+  padding:6px 12px;background:#fff;border:1px solid var(--border);
+  border-radius:8px;font-size:11px;font-weight:600;color:var(--sub);
+  cursor:pointer;font-family:-apple-system,sans-serif;
+}
+
 /* ─── スクロールバー ─── */
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -408,6 +432,23 @@ select{
     <div class="field">
       <label>スタッフ</label>
       <select id="staffSelect"><option value="">選択してください</option></select>
+    </div>
+    <div class="field">
+      <label>時給 <span class="hint">（円）</span></label>
+      <div class="input-unit">
+        <input type="number" id="hourlyWage" value="0" min="0" placeholder="0">
+        <span class="unit" style="font-size:11px">円</span>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label>出勤時刻</label>
+        <input type="time" id="workStart">
+      </div>
+      <div class="field">
+        <label>退勤時刻</label>
+        <input type="time" id="workEnd">
+      </div>
     </div>
   </div>
 
@@ -494,6 +535,17 @@ select{
     </div>
   </div>
 
+  <!-- ───────── 履歴 ───────── -->
+  <div class="card history-section">
+    <div class="card-title">履歴</div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+      <button class="btn-history-reload" onclick="loadHistory()">更新</button>
+    </div>
+    <div id="historyList" class="history-list">
+      <div class="history-loading">読み込み中…</div>
+    </div>
+  </div>
+
 </div>
 
 <!-- ───────── 記録タブ ───────── -->
@@ -545,6 +597,11 @@ select{
 </div>
 
 <script>
+// ─── Supabase ────────────────────────────────────
+const SUPABASE_URL = 'https://eomvxedfmdqpphhxomtv.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_XqJ_LTIkUqbYZmg7dVJ1dw_mgXmRn3b';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 // ─── シャンパン銘柄マスタ ─────────────────────────
 const CHAMPAGNES = [
   { name:'テタンジェ',         price:35000,  rate:0.20 },
@@ -574,7 +631,42 @@ let champRowId = 0;
   document.getElementById('dateInput').value = `${yyyy}-${mm}-${dd}`;
   renderStaff();
   addChampRow(); // 最初の1行
+  loadHistory();
 })();
+
+// ─── 履歴 ─────────────────────────────────────────
+async function loadHistory(){
+  const container = document.getElementById('historyList');
+  container.innerHTML = '<div class="history-loading">読み込み中…</div>';
+  const { data, error } = await supabase
+    .from('incentive_records')
+    .select('id, work_date, staff_name, total_incentive, created_at')
+    .order('work_date', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(50);
+  if(error){
+    console.error('Supabase load error:', error);
+    container.innerHTML = `<div class="history-error">読み込みに失敗しました：${error.message}</div>`;
+    return;
+  }
+  if(!data || !data.length){
+    container.innerHTML = '<div class="history-empty">まだ履歴がありません</div>';
+    return;
+  }
+  container.innerHTML = '';
+  data.forEach(row => {
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    const total = Math.floor(row.total_incentive || 0).toLocaleString();
+    item.innerHTML = `
+      <div class="history-meta">
+        <span class="history-date">${row.work_date || ''}</span>
+        <span class="history-name">${row.staff_name || ''}</span>
+      </div>
+      <span class="history-total">¥${total}</span>`;
+    container.appendChild(item);
+  });
+}
 
 // ─── タブ ─────────────────────────────────────────
 function switchTab(name){
@@ -786,7 +878,7 @@ function calculate(){
 }
 
 // ─── 記録保存 ──────────────────────────────────────
-function saveRecord(){
+async function saveRecord(){
   const date  = document.getElementById('dateInput').value;
   const staff = document.getElementById('staffSelect').value;
   if(!date)  { alert('日付を選択してください'); return; }
@@ -796,6 +888,9 @@ function saveRecord(){
   const shotDrink  = getN('shotDrink');
   const champRows  = getChampRows();
   const bill       = getN('totalBill');
+  const hourlyWage = getN('hourlyWage');
+  const workStart  = document.getElementById('workStart').value || null;
+  const workEnd    = document.getElementById('workEnd').value || null;
   const castAmt    = castDrink*300;
   const shotAmt    = shotDrink*500;
   const champAmt   = getChampTotal();
@@ -804,20 +899,51 @@ function saveRecord(){
   const useSales   = salesAmt > drinkChamp;
   const adopted    = useSales ? salesAmt : drinkChamp;
 
+  // localStorage 保存（既存の記録/月集計タブ用）
   const rec = {
     id: Date.now(), date, staff,
     castDrink, shotDrink, champRows, bill,
     castAmt, shotAmt, champAmt, salesAmt,
     adoptedType: useSales ? 'sales' : 'drink_champ',
     total: adopted,
+    hourlyWage, workStart, workEnd,
   };
   records.push(rec);
   localStorage.setItem('mb_records', JSON.stringify(records));
+
+  // Supabase 保存
+  const btn = document.querySelector('.btn-save');
+  const originalLabel = btn ? btn.textContent : '';
+  if(btn){ btn.disabled = true; btn.textContent = '保存中…'; }
+  const champagneData = champRows.map(c => ({
+    brand: c.brand, price: c.price, rate: c.rate, count: c.count
+  }));
+  const payload = {
+    staff_name: staff,
+    work_date: date,
+    hourly_wage: hourlyWage,
+    work_start: workStart,
+    work_end: workEnd,
+    drink_count: castDrink + shotDrink,
+    champagne_data: champagneData,
+    referral_amount: Math.floor(salesAmt),
+    total_incentive: Math.floor(adopted),
+  };
+  const { error } = await supabase.from('incentive_records').insert(payload);
+  if(btn){ btn.disabled = false; btn.textContent = originalLabel; }
+  if(error){
+    console.error('Supabase save error:', error);
+    alert('Supabaseへの保存に失敗しました：\n' + error.message);
+    return;
+  }
 
   // リセット
   document.getElementById('castDrink').value  = '0';
   document.getElementById('shotDrink').value  = '0';
   document.getElementById('totalBill').value  = '0';
+  document.getElementById('hourlyWage').value = '0';
+  document.getElementById('workStart').value  = '';
+  document.getElementById('workEnd').value    = '';
   document.getElementById('staffSelect').value = '';
   document.getElementById('resultBox').style.display = 'none';
   document.getElementById('champRows').innerHTML = '';
@@ -825,7 +951,7 @@ function saveRecord(){
   onDrinkChange(); onBillChange(); updateChampSubtotal();
 
   alert(`${staff} さんの記録を保存しました！`);
-  switchTab('records');
+  loadHistory();
 }
 
 // ─── 記録一覧 ──────────────────────────────────────
