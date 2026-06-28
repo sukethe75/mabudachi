@@ -867,7 +867,7 @@ async function openStaffEdit(name){
   const { data, error } = await sb
     .from('staff_profiles')
     .select('full_name, hourly_wage, transport_train, transport_taxi')
-    .eq('name', name)
+    .eq('staff_name', name)
     .maybeSingle();
   if(error){
     console.error('staff_profiles load error:', error);
@@ -894,7 +894,7 @@ async function saveStaffProfile(){
   const original = btn.textContent;
   btn.disabled = true; btn.textContent = '保存中…';
   const payload = {
-    name: editingStaffName,
+    staff_name: editingStaffName,
     full_name: document.getElementById('edit_full_name').value.trim() || null,
     hourly_wage:     parseInt(document.getElementById('edit_hourly_wage').value, 10)     || 0,
     transport_train: parseInt(document.getElementById('edit_transport_train').value, 10) || 0,
@@ -902,7 +902,7 @@ async function saveStaffProfile(){
   };
   const { error } = await sb
     .from('staff_profiles')
-    .upsert(payload, { onConflict: 'name' });
+    .upsert(payload, { onConflict: 'staff_name' });
   btn.disabled = false; btn.textContent = original;
   if(error){
     console.error('staff_profiles save error:', error);
@@ -919,7 +919,7 @@ async function onStaffSelect(){
   const { data, error } = await sb
     .from('staff_profiles')
     .select('hourly_wage, transport_train, transport_taxi')
-    .eq('name', name)
+    .eq('staff_name', name)
     .maybeSingle();
   if(error){ console.error('staff_profiles load error:', error); return; }
   if(!data) return; // プロフィール未登録ならそのまま
