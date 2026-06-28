@@ -598,9 +598,12 @@ select{
 
 <script>
 // ─── Supabase ────────────────────────────────────
+// 注意：CDN版は window.supabase に `var supabase` を生やすため、
+// 同名の const supabase を宣言するとスクリプト全体がSyntaxErrorで死ぬ。
+// 別名（sb）に分けてクライアントを保持する。
 const SUPABASE_URL = 'https://eomvxedfmdqpphhxomtv.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_XqJ_LTIkUqbYZmg7dVJ1dw_mgXmRn3b';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ─── シャンパン銘柄マスタ ─────────────────────────
 const CHAMPAGNES = [
@@ -638,7 +641,7 @@ let champRowId = 0;
 async function loadHistory(){
   const container = document.getElementById('historyList');
   container.innerHTML = '<div class="history-loading">読み込み中…</div>';
-  const { data, error } = await supabase
+  const { data, error } = await sb
     .from('incentive_records')
     .select('id, work_date, staff_name, total_incentive, created_at')
     .order('work_date', { ascending: false })
@@ -929,7 +932,7 @@ async function saveRecord(){
     referral_amount: Math.floor(salesAmt),
     total_incentive: Math.floor(adopted),
   };
-  const { error } = await supabase.from('incentive_records').insert(payload);
+  const { error } = await sb.from('incentive_records').insert(payload);
   if(btn){ btn.disabled = false; btn.textContent = originalLabel; }
   if(error){
     console.error('Supabase save error:', error);
