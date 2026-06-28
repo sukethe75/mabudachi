@@ -377,6 +377,35 @@ select{
 .print-header h2{font-size:18px;font-weight:800;margin-bottom:2px}
 .print-header p{font-size:12px;color:#666}
 
+/* ─── スタッフ編集モーダル ─── */
+.modal-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.45);z-index:100;
+  align-items:flex-start;justify-content:center;
+  padding:50px 16px 24px;overflow-y:auto;
+}
+.modal-overlay.active{display:flex}
+.modal-card{
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:18px 16px;width:100%;max-width:380px;
+  box-shadow:0 8px 28px rgba(0,0,0,.25);position:relative;
+}
+.modal-close{
+  position:absolute;top:8px;right:10px;
+  background:none;border:none;color:var(--muted);
+  font-size:20px;cursor:pointer;line-height:1;padding:4px 8px;
+}
+.modal-actions{display:flex;gap:8px;margin-top:14px}
+.btn-save-staff{
+  flex:1;padding:11px;background:linear-gradient(135deg,#ff8c00,#ffaa33);
+  border:none;border-radius:10px;font-size:14px;font-weight:700;
+  letter-spacing:.1em;color:#fff;cursor:pointer;
+  font-family:-apple-system,sans-serif;
+}
+.btn-save-staff:disabled{opacity:.5;cursor:wait}
+.staff-name-link{flex:1;cursor:pointer;color:var(--text)}
+.staff-name-link:hover{color:var(--gold2)}
+
 /* ─── 履歴セクション ─── */
 .history-section{margin-top:20px}
 .history-list{display:flex;flex-direction:column;gap:8px}
@@ -431,24 +460,52 @@ select{
     </div>
     <div class="field">
       <label>スタッフ</label>
-      <select id="staffSelect"><option value="">選択してください</option></select>
+      <select id="staffSelect" onchange="onStaffSelect()"><option value="">選択してください</option></select>
     </div>
     <div class="field">
       <label>時給 <span class="hint">（円）</span></label>
       <div class="input-unit">
-        <input type="number" id="hourlyWage" value="0" min="0" placeholder="0">
+        <input type="number" id="hourlyWage" value="0" min="0" placeholder="0" oninput="updatePayDisplay()">
         <span class="unit" style="font-size:11px">円</span>
       </div>
     </div>
     <div class="grid2">
       <div class="field">
         <label>出勤時刻</label>
-        <input type="time" id="workStart">
+        <input type="time" id="workStart" oninput="updatePayDisplay()">
       </div>
       <div class="field">
         <label>退勤時刻</label>
-        <input type="time" id="workEnd">
+        <input type="time" id="workEnd" oninput="updatePayDisplay()">
       </div>
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label>交通費（電車）<span class="hint">円</span></label>
+        <div class="input-unit">
+          <input type="number" id="transportTrain" value="0" min="0" placeholder="0" oninput="updatePayDisplay()">
+          <span class="unit" style="font-size:11px">円</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>交通費（タクシー）<span class="hint">円</span></label>
+        <div class="input-unit">
+          <input type="number" id="transportTaxi" value="0" min="0" placeholder="0" oninput="updatePayDisplay()">
+          <span class="unit" style="font-size:11px">円</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 支給額表示 -->
+  <div class="card">
+    <div class="card-title">支給額</div>
+    <div class="breakdown-item"><span class="lbl">勤務時間</span><span class="val" id="payHours">0.00 時間</span></div>
+    <div class="breakdown-item"><span class="lbl">基本給（時給×勤務時間）</span><span class="val" id="payBase">¥0</span></div>
+    <div class="breakdown-item"><span class="lbl">交通費（電車＋タクシー）</span><span class="val" id="payTransport">¥0</span></div>
+    <div class="total-area" style="margin-top:10px">
+      <div class="total-lbl">支給合計額</div>
+      <div class="total-num" id="payTotal"><small>¥</small>0</div>
     </div>
   </div>
 
@@ -596,6 +653,46 @@ select{
   </div>
 </div>
 
+<!-- ─── スタッフ編集モーダル ─── -->
+<div id="staffEditModal" class="modal-overlay" onclick="closeStaffEdit(event)">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeStaffEdit()">×</button>
+    <div class="card-title">スタッフ詳細</div>
+    <div class="field">
+      <label>表示名</label>
+      <input type="text" id="edit_name" readonly>
+    </div>
+    <div class="field">
+      <label>フルネーム</label>
+      <input type="text" id="edit_full_name" placeholder="山田 花子" maxlength="40">
+    </div>
+    <div class="field">
+      <label>時給 <span class="hint">（円）</span></label>
+      <div class="input-unit">
+        <input type="number" id="edit_hourly_wage" value="0" min="0">
+        <span class="unit" style="font-size:11px">円</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>交通費（電車）<span class="hint">円</span></label>
+      <div class="input-unit">
+        <input type="number" id="edit_transport_train" value="0" min="0">
+        <span class="unit" style="font-size:11px">円</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>交通費（タクシー）<span class="hint">円</span></label>
+      <div class="input-unit">
+        <input type="number" id="edit_transport_taxi" value="0" min="0">
+        <span class="unit" style="font-size:11px">円</span>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-save-staff" id="btnSaveStaff" onclick="saveStaffProfile()">保存・更新</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ─── Supabase ────────────────────────────────────
 // 注意：CDN版は window.supabase に `var supabase` を生やすため、
@@ -632,8 +729,11 @@ let champRowId = 0;
   const mm    = String(today.getMonth()+1).padStart(2,'0');
   const dd    = String(today.getDate()).padStart(2,'0');
   document.getElementById('dateInput').value = `${yyyy}-${mm}-${dd}`;
+  document.getElementById('workStart').value = '21:00';
+  document.getElementById('workEnd').value   = '03:00';
   renderStaff();
   addChampRow(); // 最初の1行
+  updatePayDisplay();
   loadHistory();
 })();
 
@@ -669,6 +769,83 @@ async function loadHistory(){
       <span class="history-total">¥${total}</span>`;
     container.appendChild(item);
   });
+}
+
+// ─── スタッフプロファイル ─────────────────────────
+let editingStaffName = null;
+
+async function openStaffEdit(name){
+  editingStaffName = name;
+  document.getElementById('edit_name').value            = name;
+  document.getElementById('edit_full_name').value       = '';
+  document.getElementById('edit_hourly_wage').value     = '0';
+  document.getElementById('edit_transport_train').value = '0';
+  document.getElementById('edit_transport_taxi').value  = '0';
+  document.getElementById('staffEditModal').classList.add('active');
+
+  const { data, error } = await sb
+    .from('staff_profiles')
+    .select('full_name, hourly_wage, transport_train, transport_taxi')
+    .eq('name', name)
+    .maybeSingle();
+  if(error){
+    console.error('staff_profiles load error:', error);
+    alert('プロフィールの読み込みに失敗：\n' + error.message);
+    return;
+  }
+  if(data && editingStaffName === name){
+    document.getElementById('edit_full_name').value       = data.full_name || '';
+    document.getElementById('edit_hourly_wage').value     = data.hourly_wage || 0;
+    document.getElementById('edit_transport_train').value = data.transport_train || 0;
+    document.getElementById('edit_transport_taxi').value  = data.transport_taxi || 0;
+  }
+}
+
+function closeStaffEdit(e){
+  if(e && e.target !== e.currentTarget) return;
+  document.getElementById('staffEditModal').classList.remove('active');
+  editingStaffName = null;
+}
+
+async function saveStaffProfile(){
+  if(!editingStaffName) return;
+  const btn = document.getElementById('btnSaveStaff');
+  const original = btn.textContent;
+  btn.disabled = true; btn.textContent = '保存中…';
+  const payload = {
+    name: editingStaffName,
+    full_name: document.getElementById('edit_full_name').value.trim() || null,
+    hourly_wage:     parseInt(document.getElementById('edit_hourly_wage').value, 10)     || 0,
+    transport_train: parseInt(document.getElementById('edit_transport_train').value, 10) || 0,
+    transport_taxi:  parseInt(document.getElementById('edit_transport_taxi').value, 10)  || 0,
+  };
+  const { error } = await sb
+    .from('staff_profiles')
+    .upsert(payload, { onConflict: 'name' });
+  btn.disabled = false; btn.textContent = original;
+  if(error){
+    console.error('staff_profiles save error:', error);
+    alert('保存に失敗しました：\n' + error.message);
+    return;
+  }
+  alert('保存しました');
+  closeStaffEdit();
+}
+
+async function onStaffSelect(){
+  const name = document.getElementById('staffSelect').value;
+  if(!name){ updatePayDisplay(); return; }
+  const { data, error } = await sb
+    .from('staff_profiles')
+    .select('hourly_wage, transport_train, transport_taxi')
+    .eq('name', name)
+    .maybeSingle();
+  if(error){ console.error('staff_profiles load error:', error); return; }
+  if(!data) return; // プロフィール未登録ならそのまま
+  document.getElementById('hourlyWage').value     = data.hourly_wage     || 0;
+  document.getElementById('transportTrain').value = data.transport_train || 0;
+  document.getElementById('transportTaxi').value  = data.transport_taxi  || 0;
+  updatePayDisplay();
 }
 
 // ─── タブ ─────────────────────────────────────────
@@ -707,7 +884,16 @@ function renderStaffTab(){
   staffList.forEach((name,i)=>{
     const li = document.createElement('li');
     li.className = 'staff-item';
-    li.innerHTML = `<span>${name}</span><button class="btn-del" onclick="removeStaff(${i})">削除</button>`;
+    const span = document.createElement('span');
+    span.className = 'staff-name-link';
+    span.textContent = name;
+    span.addEventListener('click', () => openStaffEdit(name));
+    const btn = document.createElement('button');
+    btn.className = 'btn-del';
+    btn.textContent = '削除';
+    btn.addEventListener('click', () => removeStaff(i));
+    li.appendChild(span);
+    li.appendChild(btn);
     ul.appendChild(li);
   });
 }
@@ -823,6 +1009,33 @@ function onBillChange(){
   const bill = parseFloat(document.getElementById('totalBill').value)||0;
   const back = bill*0.05;
   document.getElementById('salesBackPreview').textContent = '¥'+Math.floor(back).toLocaleString();
+}
+
+// ─── 支給額（基本給+交通費）─────────────────────────
+function calcWorkHours(start, end){
+  if(!start || !end) return 0;
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  let s = sh*60 + sm;
+  let e = eh*60 + em;
+  if(e <= s) e += 24*60; // 日跨ぎ
+  return (e - s) / 60;
+}
+
+function updatePayDisplay(){
+  const wage  = parseFloat(document.getElementById('hourlyWage').value)||0;
+  const start = document.getElementById('workStart').value;
+  const end   = document.getElementById('workEnd').value;
+  const train = parseFloat(document.getElementById('transportTrain').value)||0;
+  const taxi  = parseFloat(document.getElementById('transportTaxi').value)||0;
+  const hours = calcWorkHours(start, end);
+  const base  = Math.floor(hours * wage);
+  const trans = train + taxi;
+  const total = base + trans;
+  document.getElementById('payHours').textContent     = hours.toFixed(2) + ' 時間';
+  document.getElementById('payBase').textContent      = '¥' + base.toLocaleString();
+  document.getElementById('payTransport').textContent = '¥' + trans.toLocaleString();
+  document.getElementById('payTotal').innerHTML       = '<small>¥</small>' + total.toLocaleString();
 }
 
 // ─── 計算 ─────────────────────────────────────────
@@ -945,13 +1158,15 @@ async function saveRecord(){
   document.getElementById('shotDrink').value  = '0';
   document.getElementById('totalBill').value  = '0';
   document.getElementById('hourlyWage').value = '0';
-  document.getElementById('workStart').value  = '';
-  document.getElementById('workEnd').value    = '';
+  document.getElementById('workStart').value  = '21:00';
+  document.getElementById('workEnd').value    = '03:00';
+  document.getElementById('transportTrain').value = '0';
+  document.getElementById('transportTaxi').value  = '0';
   document.getElementById('staffSelect').value = '';
   document.getElementById('resultBox').style.display = 'none';
   document.getElementById('champRows').innerHTML = '';
   champRowId = 0; addChampRow();
-  onDrinkChange(); onBillChange(); updateChampSubtotal();
+  onDrinkChange(); onBillChange(); updateChampSubtotal(); updatePayDisplay();
 
   alert(`${staff} さんの記録を保存しました！`);
   loadHistory();
