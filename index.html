@@ -783,28 +783,75 @@ const SUPABASE_URL = 'https://eomvxedfmdqpphhxomtv.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_XqJ_LTIkUqbYZmg7dVJ1dw_mgXmRn3b';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ─── シャンパン銘柄マスタ ─────────────────────────
-const CHAMPAGNES = [
-  { name:'テタンジェ',         price:35000,  rate:0.20 },
-  { name:'ローランペリエ',     price:30000,  rate:0.20 },
-  { name:'ドン・ペリニヨン',   price:85000,  rate:0.20 },
-  { name:'ベル・エポック',     price:75000,  rate:0.20 },
-  { name:'ベル・エポック・ロゼ',price:180000, rate:0.20 },
-  { name:'クリスタル',         price:200000, rate:0.20 },
-  { name:'ペリエ・ジュエ',     price:30000,  rate:0.20 },
-  { name:'クリュッグ',         price:150000, rate:0.20 },
-  { name:'オリシャン',         price:30000,  rate:0.50 },
-  { name:'オリシャン(50,000円)', price:50000,  rate:0.50 },
-  { name:'テキーラ観覧車(25,000円)', price:25000,  rate:0.20 },
-];
-
-// ─── State ────────────────────────────────────────
-let staffList = JSON.parse(localStorage.getItem('mb_staff') || '["アヤ","あやの","はる","ひなこ","りかぴ","ゆりか","ゆり","もえ","みなみ","みく","まろ","まりん","まゆ","たまみ","ことの"]');
-let records   = JSON.parse(localStorage.getItem('mb_records') || '[]');
+// ─── State（Supabaseを単一の真実とするインメモリキャッシュ）─────
+let CHAMPAGNES = [];   // {name, price, rate}
+let staffList  = [];   // string[]
+let records    = [];   // 正規化済みの記録（後段の描画コードが期待する形）
 let champRowId = 0;
 
+// ─── データロード ──────────────────────────────────
+async function loadChampagnes(){
+  const { data, error } = await sb
+    .from('champagnes')
+    .select('name, price, rate, sort_order')
+    .order('sort_order', { ascending: true });
+  if(error){ console.error('champagnes load error:', error); CHAMPAGNES = []; return; }
+  CHAMPAGNES = (data||[]).map(d => ({
+    name: d.name,
+    price: Number(d.price)||0,
+    rate:  Number(d.rate)||0,
+  }));
+}
+
+async function loadStaffList(){
+  const { data, error } = await sb
+    .from('staff_profiles')
+    .select('staff_name')
+    .order('staff_name', { ascending: true });
+  if(error){ console.error('staff_profiles load error:', error); staffList = []; return; }
+  staffList = (data||[]).map(d => d.staff_name).filter(Boolean);
+}
+
+function sumChampAmt(arr){
+  if(!Array.isArray(arr)) return 0;
+  return arr.reduce((acc, c) => acc + (Number(c.price)||0) * (Number(c.rate)||0) * (Number(c.count)||0), 0);
+}
+
+async function loadRecords(){
+  const { data, error } = await sb
+    .from('incentive_records')
+    .select('id, work_date, staff_name, drink_count, champagne_data, referral_amount, total_incentive, breakdown, created_at')
+    .order('work_date', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(1000);
+  if(error){ console.error('incentive_records load error:', error); records = []; return; }
+  records = (data||[]).map(r => {
+    const bd      = r.breakdown || {};
+    const refAmt  = Number(r.referral_amount)||0;
+    const total   = Number(r.total_incentive)||0;
+    const champRows = Array.isArray(r.champagne_data) ? r.champagne_data : [];
+    const champAmt  = bd.champAmt ?? sumChampAmt(champRows);
+    return {
+      id:          r.id,
+      date:        r.work_date,
+      staff:       r.staff_name,
+      castDrink:   bd.castDrink ?? null,
+      shotDrink:   bd.shotDrink ?? null,
+      castAmt:     Number(bd.castAmt)||0,
+      shotAmt:     Number(bd.shotAmt)||0,
+      champAmt:    Math.floor(champAmt),
+      salesAmt:    Number(bd.salesAmt) || refAmt,
+      bill:        Number(bd.bill) || Math.round(refAmt * 20),
+      drinkCount:  Number(r.drink_count)||0,
+      champRows,
+      adoptedType: bd.adoptedType || (refAmt > 0 && refAmt === total ? 'sales' : 'drink_champ'),
+      total,
+    };
+  });
+}
+
 // ─── 初期化 ───────────────────────────────────────
-(function init(){
+(async function init(){
   const today = new Date();
   const yyyy  = today.getFullYear();
   const mm    = String(today.getMonth()+1).padStart(2,'0');
@@ -812,44 +859,46 @@ let champRowId = 0;
   document.getElementById('dateInput').value = `${yyyy}-${mm}-${dd}`;
   document.getElementById('workStart').value = '21:00';
   document.getElementById('workEnd').value   = '03:00';
+
+  // ヒストリーをローディング状態に
+  document.getElementById('historyList').innerHTML = '<div class="history-loading">読み込み中…</div>';
+
+  await Promise.all([loadChampagnes(), loadStaffList(), loadRecords()]);
+
   renderStaff();
-  addChampRow(); // 最初の1行
+  addChampRow();         // CHAMPAGNES がロード済みになってから初行を生成
   updatePayDisplay();
-  loadHistory();
+  renderHistory();
 })();
 
 // ─── 履歴 ─────────────────────────────────────────
-async function loadHistory(){
+function renderHistory(){
   const container = document.getElementById('historyList');
-  container.innerHTML = '<div class="history-loading">読み込み中…</div>';
-  const { data, error } = await sb
-    .from('incentive_records')
-    .select('id, work_date, staff_name, total_incentive, created_at')
-    .order('work_date', { ascending: false })
-    .order('created_at', { ascending: false })
-    .limit(50);
-  if(error){
-    console.error('Supabase load error:', error);
-    container.innerHTML = `<div class="history-error">読み込みに失敗しました：${error.message}</div>`;
-    return;
-  }
-  if(!data || !data.length){
+  if(!records.length){
     container.innerHTML = '<div class="history-empty">まだ履歴がありません</div>';
     return;
   }
   container.innerHTML = '';
-  data.forEach(row => {
+  records.slice(0, 50).forEach(r => {
     const item = document.createElement('div');
     item.className = 'history-item';
-    const total = Math.floor(row.total_incentive || 0).toLocaleString();
+    const total = Math.floor(r.total || 0).toLocaleString();
     item.innerHTML = `
       <div class="history-meta">
-        <span class="history-date">${row.work_date || ''}</span>
-        <span class="history-name">${row.staff_name || ''}</span>
+        <span class="history-date">${r.date || ''}</span>
+        <span class="history-name">${r.staff || ''}</span>
       </div>
       <span class="history-total">¥${total}</span>`;
     container.appendChild(item);
   });
+}
+
+// 「更新」ボタンから呼ばれる: 再フェッチして再描画
+async function loadHistory(){
+  const container = document.getElementById('historyList');
+  container.innerHTML = '<div class="history-loading">読み込み中…</div>';
+  await loadRecords();
+  renderHistory();
 }
 
 // ─── スタッフプロファイル ─────────────────────────
@@ -930,19 +979,19 @@ async function onStaffSelect(){
 }
 
 // ─── タブ ─────────────────────────────────────────
-function switchTab(name){
+async function switchTab(name){
   const names = ['input','records','monthly','staff'];
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active', names[i]===name));
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
-  if(name==='records') renderRecords();
-  if(name==='monthly') renderMonthlySummary();
-  if(name==='staff')   renderStaffTab();
+  // 切替のたびにSupabaseの最新を取り直す（他端末の更新を反映）
+  if(name==='records'){ await loadRecords();   renderRecords(); }
+  if(name==='monthly'){ await loadRecords();   renderMonthlySummary(); }
+  if(name==='staff'){   await loadStaffList(); renderStaff(); renderStaffTab(); }
+  if(name==='input'){   renderHistory(); }
 }
 
 // ─── スタッフ ──────────────────────────────────────
-function saveStaff(){ localStorage.setItem('mb_staff', JSON.stringify(staffList)); }
-
 function renderStaff(){
   const sel = document.getElementById('staffSelect');
   const cur = sel.value;
@@ -962,7 +1011,7 @@ function renderStaffTab(){
     ul.innerHTML = '<li style="color:var(--muted);font-size:13px;padding:8px 0">スタッフがいません</li>';
     return;
   }
-  staffList.forEach((name,i)=>{
+  staffList.forEach((name)=>{
     const li = document.createElement('li');
     li.className = 'staff-item';
     const span = document.createElement('span');
@@ -972,27 +1021,40 @@ function renderStaffTab(){
     const btn = document.createElement('button');
     btn.className = 'btn-del';
     btn.textContent = '削除';
-    btn.addEventListener('click', () => removeStaff(i));
+    btn.addEventListener('click', () => removeStaff(name));
     li.appendChild(span);
     li.appendChild(btn);
     ul.appendChild(li);
   });
 }
 
-function addStaff(){
+async function addStaff(){
   const inp  = document.getElementById('newStaffName');
   const name = inp.value.trim();
   if(!name) return;
   if(staffList.includes(name)){ alert('同じ名前がすでにいます'); return; }
-  staffList.push(name);
-  saveStaff(); inp.value = '';
+  const { error } = await sb.from('staff_profiles').insert({ staff_name: name });
+  if(error){
+    if(error.code === '23505'){ alert('同じ名前がすでにいます'); return; }
+    console.error('addStaff error:', error);
+    alert('スタッフ追加に失敗しました：\n' + error.message);
+    return;
+  }
+  inp.value = '';
+  await loadStaffList();
   renderStaff(); renderStaffTab();
 }
 
-function removeStaff(i){
-  if(!confirm(`「${staffList[i]}」を削除しますか？`)) return;
-  staffList.splice(i,1);
-  saveStaff(); renderStaff(); renderStaffTab();
+async function removeStaff(name){
+  if(!confirm(`「${name}」を削除しますか？\nプロフィール（時給・交通費）も削除されます。`)) return;
+  const { error } = await sb.from('staff_profiles').delete().eq('staff_name', name);
+  if(error){
+    console.error('removeStaff error:', error);
+    alert('削除に失敗しました：\n' + error.message);
+    return;
+  }
+  await loadStaffList();
+  renderStaff(); renderStaffTab();
 }
 
 // ─── シャンパン行 ──────────────────────────────────
@@ -1196,18 +1258,6 @@ async function saveRecord(){
   const useSales   = salesAmt > drinkChamp;
   const adopted    = useSales ? salesAmt : drinkChamp;
 
-  // localStorage 保存（既存の記録/月集計タブ用）
-  const rec = {
-    id: Date.now(), date, staff,
-    castDrink, shotDrink, champRows, bill,
-    castAmt, shotAmt, champAmt, salesAmt,
-    adoptedType: useSales ? 'sales' : 'drink_champ',
-    total: adopted,
-    hourlyWage, workStart, workEnd,
-  };
-  records.push(rec);
-  localStorage.setItem('mb_records', JSON.stringify(records));
-
   // Supabase 保存
   const btn = document.querySelector('.btn-save');
   const originalLabel = btn ? btn.textContent : '';
@@ -1215,6 +1265,16 @@ async function saveRecord(){
   const champagneData = champRows.map(c => ({
     brand: c.brand, price: c.price, rate: c.rate, count: c.count
   }));
+  const adoptedType = useSales ? 'sales' : 'drink_champ';
+  const breakdown = {
+    castDrink, shotDrink,
+    castAmt:  Math.floor(castAmt),
+    shotAmt:  Math.floor(shotAmt),
+    champAmt: Math.floor(champAmt),
+    salesAmt: Math.floor(salesAmt),
+    bill:     Math.floor(bill),
+    adoptedType,
+  };
   const payload = {
     staff_name: staff,
     work_date: date,
@@ -1225,6 +1285,7 @@ async function saveRecord(){
     champagne_data: champagneData,
     referral_amount: Math.floor(salesAmt),
     total_incentive: Math.floor(adopted),
+    breakdown,
   };
   const { error } = await sb.from('incentive_records').insert(payload);
   if(btn){ btn.disabled = false; btn.textContent = originalLabel; }
@@ -1233,6 +1294,9 @@ async function saveRecord(){
     alert('Supabaseへの保存に失敗しました：\n' + error.message);
     return;
   }
+
+  // ローカルキャッシュを更新
+  await loadRecords();
 
   // リセット
   document.getElementById('castDrink').value  = '0';
@@ -1250,7 +1314,7 @@ async function saveRecord(){
   onDrinkChange(); onBillChange(); updateChampSubtotal(); updatePayDisplay();
 
   alert(`${staff} さんの記録を保存しました！`);
-  loadHistory();
+  renderHistory();
 }
 
 // ─── 記録一覧 ──────────────────────────────────────
@@ -1261,7 +1325,7 @@ function renderRecords(){
     return;
   }
   const groups = {};
-  [...records].reverse().forEach(r=>{ (groups[r.date]=groups[r.date]||[]).push(r); });
+  records.forEach(r=>{ (groups[r.date]=groups[r.date]||[]).push(r); });
   container.innerHTML = '';
   Object.keys(groups).sort((a,b)=>b.localeCompare(a)).forEach(date=>{
     const [y,m,d] = date.split('-');
@@ -1274,36 +1338,52 @@ function renderRecords(){
       const champSummary = (r.champRows||[]).length>0
         ? (r.champRows||[]).map(c=>`${c.brand}×${c.count}`).join('、')
         : null;
-      const tags = [
-        {lbl:`Drink ${r.castDrink}杯`, zero:r.castDrink===0},
-        {lbl:`Shot ${r.shotDrink}杯`,  zero:r.shotDrink===0},
-        champSummary ? {lbl:champSummary, zero:false} : null,
-        {lbl:`集客 ¥${(r.bill||0).toLocaleString()}`, zero:!r.bill},
-      ].filter(Boolean).map(t=>`<span class="tag${t.zero?' zero':''}">${t.lbl}</span>`).join('');
+
+      const tagList = [];
+      if(r.castDrink != null) tagList.push({lbl:`Drink ${r.castDrink}杯`, zero:r.castDrink===0});
+      if(r.shotDrink != null) tagList.push({lbl:`Shot ${r.shotDrink}杯`,  zero:r.shotDrink===0});
+      if(r.castDrink == null && r.shotDrink == null && r.drinkCount != null){
+        tagList.push({lbl:`ドリンク ${r.drinkCount}杯`, zero:r.drinkCount===0});
+      }
+      if(champSummary) tagList.push({lbl:champSummary, zero:false});
+      tagList.push({lbl:`集客 ¥${(r.bill||0).toLocaleString()}`, zero:!r.bill});
+      const tags = tagList.map(t=>`<span class="tag${t.zero?' zero':''}">${t.lbl}</span>`).join('');
 
       const card = document.createElement('div');
       card.className = 'rec-card';
-      card.innerHTML = `
-        <button class="btn-rec-del" onclick="deleteRecord(${r.id})">×</button>
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn-rec-del';
+      delBtn.textContent = '×';
+      delBtn.addEventListener('click', () => deleteRecord(r.id));
+      card.appendChild(delBtn);
+      const body = document.createElement('div');
+      body.innerHTML = `
         <div class="rec-top">
-          <span class="rec-name">${r.staff}</span>
-          <span class="rec-total">¥${Math.floor(r.total).toLocaleString()}</span>
+          <span class="rec-name">${r.staff||''}</span>
+          <span class="rec-total">¥${Math.floor(r.total||0).toLocaleString()}</span>
         </div>
         <div class="rec-detail">
           ${tags}
           <span class="tag adopted">${adoptTag}</span>
         </div>`;
+      card.appendChild(body);
       g.appendChild(card);
     });
     container.appendChild(g);
   });
 }
 
-function deleteRecord(id){
+async function deleteRecord(id){
   if(!confirm('この記録を削除しますか？')) return;
-  records = records.filter(r=>r.id!==id);
-  localStorage.setItem('mb_records', JSON.stringify(records));
+  const { error } = await sb.from('incentive_records').delete().eq('id', id);
+  if(error){
+    console.error('deleteRecord error:', error);
+    alert('削除に失敗しました：\n' + error.message);
+    return;
+  }
+  await loadRecords();
   renderRecords();
+  renderHistory();
 }
 
 // ─── 月間集計 ──────────────────────────────────────
@@ -1311,7 +1391,7 @@ function buildMonthOptions(){
   const sel = document.getElementById('monthSelect');
   const cur = sel.value;
   const months = new Set();
-  records.forEach(r=>months.add(r.date.slice(0,7)));
+  records.forEach(r=>{ if(r.date) months.add(r.date.slice(0,7)); });
   const today = new Date();
   months.add(`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`);
   const sorted = [...months].sort((a,b)=>b.localeCompare(a));
@@ -1332,7 +1412,7 @@ function renderMonthlySummary(){
   const ym    = document.getElementById('monthSelect').value;
   const [y,m] = ym.split('-');
   document.getElementById('printSubtitle').textContent = `${y}年${parseInt(m)}月 インセンティブ集計`;
-  const monthly  = records.filter(r=>r.date.startsWith(ym));
+  const monthly  = records.filter(r=>r.date && r.date.startsWith(ym));
   const tbody    = document.getElementById('summaryBody');
   const emptyMsg = document.getElementById('summaryEmpty');
   if(!monthly.length){
