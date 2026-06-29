@@ -791,15 +791,16 @@ let champRowId = 0;
 
 // ─── データロード ──────────────────────────────────
 async function loadChampagnes(){
+  // 実テーブルのカラム: id / created_at / name / price / incentive_rate
   const { data, error } = await sb
     .from('champagnes')
-    .select('name, price, rate, sort_order')
-    .order('sort_order', { ascending: true });
+    .select('name, price, incentive_rate')
+    .order('id', { ascending: true });
   if(error){ console.error('champagnes load error:', error); CHAMPAGNES = []; return; }
   CHAMPAGNES = (data||[]).map(d => ({
     name: d.name,
     price: Number(d.price)||0,
-    rate:  Number(d.rate)||0,
+    rate:  Number(d.incentive_rate)||0,
   }));
 }
 
