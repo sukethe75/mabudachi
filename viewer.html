@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>まぶだち｜記録閲覧</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#2C1F14;
+  --bg-deep:#1f160d;
+  --card:#3D2B1A;
+  --card2:#4A3322;
+  --field-bg:#2a1d11;
+  --border:#5C3D1E;
+  --border-light:#7a522a;
+  --burgundy:#8B1A1A;
+  --burgundy-dim:#6e1414;
+  --burgundy-light:#a83030;
+  --terracotta:#C4763A;
+  --terracotta-light:#d68a4c;
+  --terracotta-dim:#9c5b29;
+  --cream:#F5E6C8;
+  --gold:#C9A97A;
+  --gold-dim:#a88c5e;
+  --text:#F5E6C8;
+  --sub:#C9A97A;
+  --muted:#8a7558;
+  --green:#7ab36f;
+  --green-bg:rgba(122,179,111,.14);
+  --burgundy-bg:rgba(139,26,26,.22);
+  --serif:'Noto Serif JP', 'Yu Mincho', 'Hiragino Mincho ProN', serif;
+  --sans:'Noto Sans JP', 'Hiragino Sans', sans-serif;
+}
+
+body{
+  font-family:var(--sans);
+  font-weight:300;
+  background:var(--bg);
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(196,118,58,.20) 0%, transparent 55%),
+    radial-gradient(ellipse at 15% 85%, rgba(139,26,26,.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 90% 60%, rgba(196,118,58,.08) 0%, transparent 45%);
+  color:var(--text);
+  min-height:100vh;
+  padding:0 0 80px;
+}
+
+/* ─── ヘッダー ─── */
+header{
+  background:
+    linear-gradient(135deg, #6e1414 0%, #8B1A1A 45%, #a83030 100%);
+  padding:34px 20px 28px;
+  text-align:center;
+  border-bottom:3px double var(--terracotta);
+  position:relative;
+  overflow:hidden;
+  box-shadow:0 6px 24px rgba(0,0,0,.45), inset 0 1px 0 rgba(245,230,200,.18);
+}
+header::before,header::after{
+  content:'❋ ❋ ❋ ❋ ❋ ❋ ❋ ❋ ❋ ❋ ❋ ❋';
+  display:block;font-size:10px;color:rgba(245,230,200,.4);letter-spacing:7px;
+}
+header::before{margin-bottom:14px}
+header::after{margin-top:14px}
+header h1{
+  font-family:var(--serif);
+  font-size:32px;font-weight:700;letter-spacing:.18em;
+  color:var(--cream);
+  text-shadow:0 2px 10px rgba(0,0,0,.6), 0 0 24px rgba(196,118,58,.35);
+  line-height:1.1;
+}
+header .sub{
+  font-family:var(--sans);font-weight:400;
+  font-size:10px;letter-spacing:.42em;color:rgba(245,230,200,.65);
+  margin-top:10px;
+}
+
+/* ─── タブ ─── */
+.tabs{
+  display:flex;border-bottom:1px solid var(--border);
+  background:var(--bg-deep);position:sticky;top:0;z-index:10;
+  box-shadow:0 3px 14px rgba(0,0,0,.4);
+}
+.tab{
+  flex:1;padding:15px 0;text-align:center;
+  font-family:var(--sans);font-weight:400;
+  font-size:13px;color:var(--gold-dim);
+  cursor:pointer;letter-spacing:.12em;transition:.25s;
+  border-bottom:2px solid transparent;margin-bottom:-1px;
+}
+.tab.active{
+  color:var(--terracotta);
+  border-bottom-color:var(--terracotta);
+  text-shadow:0 0 12px rgba(196,118,58,.45);
+}
+
+/* ─── 更新ツールバー ─── */
+.toolbar{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:12px 16px 0;
+}
+.toolbar .status{
+  font-size:10px;color:var(--muted);letter-spacing:.08em;
+  font-family:var(--sans);
+}
+.btn-refresh{
+  padding:9px 18px;
+  background:linear-gradient(135deg, #6e1414, #8B1A1A 60%, #C4763A);
+  border:1px solid var(--terracotta-dim);border-radius:9px;
+  font-family:var(--sans);
+  font-size:12px;font-weight:500;letter-spacing:.14em;color:var(--cream);
+  cursor:pointer;transition:.15s;white-space:nowrap;
+  box-shadow:0 4px 12px rgba(139,26,26,.35), inset 0 1px 0 rgba(245,230,200,.15);
+}
+.btn-refresh:active{opacity:.85;transform:scale(.98)}
+.btn-refresh:disabled{opacity:.5;cursor:wait}
+
+/* ─── セクション ─── */
+.section{display:none;padding:16px 16px 20px}
+.section.active{display:block}
+
+/* ─── カード ─── */
+.card{
+  background:linear-gradient(180deg, var(--card) 0%, #382519 100%);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:18px 16px;margin-bottom:16px;
+  position:relative;
+  box-shadow:
+    0 6px 20px rgba(0,0,0,.4),
+    0 0 0 1px rgba(196,118,58,.04),
+    inset 0 1px 0 rgba(245,230,200,.06);
+}
+.card::before{
+  content:'';position:absolute;inset:4px;
+  border:1px solid rgba(201,169,122,.09);border-radius:9px;
+  pointer-events:none;
+}
+.card-title{
+  font-family:var(--serif);
+  font-size:13px;font-weight:700;letter-spacing:.28em;
+  color:var(--terracotta);margin-bottom:16px;
+  display:flex;align-items:center;gap:10px;
+}
+.card-title::before,.card-title::after{
+  content:'';flex:1;height:1px;
+  background:linear-gradient(90deg,transparent,var(--terracotta-dim));
+}
+.card-title::after{
+  background:linear-gradient(90deg,var(--terracotta-dim),transparent);
+}
+
+/* ─── セレクト ─── */
+select{
+  width:100%;
+  background:var(--field-bg);
+  border:1px solid var(--border-light);
+  border-radius:8px;
+  color:var(--cream);
+  font-size:16px;
+  padding:11px 13px;
+  outline:none;
+  transition:.2s;
+  -webkit-appearance:none;
+  appearance:none;
+  font-family:var(--sans);
+  font-weight:400;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23C9A97A' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;padding-right:34px;
+}
+select:focus{
+  border-color:var(--terracotta);
+  background-color:#322113;
+  box-shadow:0 0 0 3px rgba(196,118,58,.18), 0 0 14px rgba(196,118,58,.12);
+}
+
+/* ─── 記録一覧 ─── */
+.rec-group{margin-bottom:20px}
+.rec-date-head{
+  font-family:var(--serif);
+  font-size:11px;font-weight:700;letter-spacing:.28em;color:var(--terracotta);
+  padding:7px 4px;border-bottom:1px solid var(--border);margin-bottom:10px;
+}
+.rec-card{
+  background:#2e1e12;border:1px solid var(--border);border-radius:12px;
+  padding:14px;margin-bottom:8px;position:relative;
+  box-shadow:0 3px 10px rgba(0,0,0,.32);
+}
+.rec-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
+.rec-name{font-family:var(--serif);font-size:15px;font-weight:500;color:var(--cream)}
+.rec-total{font-family:var(--serif);font-size:17px;font-weight:700;color:var(--terracotta)}
+.rec-detail{display:flex;flex-wrap:wrap;gap:6px}
+.tag{
+  font-size:10px;padding:3px 9px;border-radius:20px;
+  background:#3d2818;color:var(--gold);border:1px solid var(--border);
+  font-family:var(--sans);
+}
+.tag.zero{opacity:.35}
+.tag.adopted{background:rgba(196,118,58,.16);color:var(--terracotta);border-color:var(--terracotta-dim)}
+.empty-msg{
+  text-align:center;color:var(--muted);font-size:13px;padding:55px 0;
+  font-family:var(--sans);letter-spacing:.18em;
+}
+.state-msg{
+  text-align:center;color:var(--muted);font-size:13px;padding:55px 0;
+  font-family:var(--sans);letter-spacing:.18em;
+}
+.state-msg.error{color:#dc6b56}
+
+/* ─── 月間集計 ─── */
+.month-selector{display:flex;gap:10px;align-items:center;margin-bottom:16px}
+.month-selector select{flex:1}
+.btn-print{
+  padding:11px 16px;background:#2e1e12;border:1px solid var(--border-light);
+  border-radius:8px;font-size:12px;font-weight:500;color:var(--gold);
+  cursor:pointer;white-space:nowrap;font-family:var(--sans);
+  letter-spacing:.12em;transition:.18s;
+}
+.btn-print:hover{border-color:var(--terracotta);color:var(--terracotta)}
+
+.summary-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px;border:1px solid var(--border)}
+.summary-table{width:100%;border-collapse:collapse;font-size:12px;min-width:520px;font-family:var(--sans)}
+.summary-table th{
+  background:#2a1c10;color:var(--terracotta);font-weight:700;
+  padding:11px 12px;text-align:right;white-space:nowrap;
+  border-bottom:1px solid var(--terracotta-dim);letter-spacing:.08em;
+  font-family:var(--serif);
+}
+.summary-table th:first-child{text-align:left}
+.summary-table td{
+  padding:11px 12px;border-bottom:1px solid rgba(92,61,30,.5);
+  text-align:right;color:var(--cream);white-space:nowrap;
+}
+.summary-table td:first-child{text-align:left;font-weight:500;color:var(--gold);font-family:var(--serif)}
+.summary-table tr:last-child td{border-bottom:none}
+.summary-table .total-row td{
+  background:rgba(196,118,58,.13);font-weight:700;color:var(--terracotta);
+  border-top:2px solid var(--terracotta);
+  font-family:var(--serif);
+}
+.val-zero{color:var(--muted)!important;font-weight:400!important}
+
+/* ─── 印刷 ─── */
+@media print{
+  body{background:#fff;color:#000;padding:0;background-image:none}
+  header,.tabs,.toolbar,#tab-records,.month-selector .btn-print{display:none!important}
+  #tab-monthly{display:block!important;padding:0}
+  .print-header{display:block!important}
+  .card{background:#fff;border:none;padding:0;box-shadow:none}
+  .card::before{display:none}
+  .card-title{color:#000}
+  .summary-wrap{overflow:visible;border:1px solid #ccc}
+  .summary-table{min-width:unset;font-size:11px}
+  .summary-table th{background:#f5eedd;color:#000;border-bottom:1px solid #999}
+  .summary-table td{color:#000;border-bottom:1px solid #eee}
+  .summary-table .total-row td{background:#fff8e0;color:#000}
+  .val-zero{color:#bbb!important}
+}
+.print-header{display:none;text-align:center;margin-bottom:16px}
+.print-header h2{font-family:var(--serif);font-size:20px;font-weight:700;margin-bottom:4px}
+.print-header p{font-size:12px;color:#666}
+
+/* ─── スクロールバー ─── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-light);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--terracotta-dim)}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>スナックまぶだち</h1>
+  <div class="sub">CAST INCENTIVE &nbsp;·&nbsp; VIEWER</div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('records')">記録</div>
+  <div class="tab" onclick="switchTab('monthly')">月集計</div>
+</div>
+
+<div class="toolbar">
+  <span class="status" id="statusText">読み込み中…</span>
+  <button class="btn-refresh" id="btnRefresh" onclick="refresh()">更新</button>
+</div>
+
+<!-- ───────── 記録タブ ───────── -->
+<div id="tab-records" class="section active">
+  <div id="recordsList">
+    <div class="state-msg">読み込み中…</div>
+  </div>
+</div>
+
+<!-- ───────── 月集計タブ ───────── -->
+<div id="tab-monthly" class="section">
+  <div class="print-header">
+    <h2>スナック まぶだち</h2>
+    <p id="printSubtitle">月間インセンティブ集計</p>
+  </div>
+  <div class="card">
+    <div class="card-title">月間集計</div>
+    <div class="month-selector">
+      <select id="monthSelect" onchange="renderMonthlySummary()"></select>
+      <button class="btn-print" onclick="printSummary()">印刷</button>
+    </div>
+    <div class="summary-wrap">
+      <table class="summary-table" id="summaryTable">
+        <thead>
+          <tr>
+            <th>キャスト</th>
+            <th>Drink</th>
+            <th>Shot</th>
+            <th>シャンパン</th>
+            <th>集客</th>
+            <th>合計</th>
+          </tr>
+        </thead>
+        <tbody id="summaryBody"></tbody>
+      </table>
+    </div>
+    <div class="empty-msg" id="summaryEmpty" style="display:none">この月の記録がありません</div>
+  </div>
+</div>
+
+<script>
+// ─── Supabase（index.html と同じ接続情報）──────────
+const SUPABASE_URL = 'https://eomvxedfmdqpphhxomtv.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_XqJ_LTIkUqbYZmg7dVJ1dw_mgXmRn3b';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ─── State（閲覧専用・インメモリキャッシュ）────────
+let records = [];
+let loadError = null;
+
+function sumChampAmt(arr){
+  if(!Array.isArray(arr)) return 0;
+  return arr.reduce((acc, c) => acc + (Number(c.price)||0) * (Number(c.rate)||0) * (Number(c.count)||0), 0);
+}
+
+// ─── データロード ──────────────────────────────────
+async function loadRecords(){
+  loadError = null;
+  const { data, error } = await sb
+    .from('incentive_records')
+    .select('id, work_date, staff_name, drink_count, champagne_data, referral_amount, total_incentive, breakdown, created_at')
+    .order('work_date', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(1000);
+  if(error){
+    console.error('incentive_records load error:', error);
+    loadError = error.message || String(error);
+    records = [];
+    return;
+  }
+  records = (data||[]).map(r => {
+    const bd      = r.breakdown || {};
+    const refAmt  = Number(r.referral_amount)||0;
+    const total   = Number(r.total_incentive)||0;
+    const champRows = Array.isArray(r.champagne_data) ? r.champagne_data : [];
+    const champAmt  = bd.champAmt ?? sumChampAmt(champRows);
+    return {
+      id:          r.id,
+      date:        r.work_date,
+      staff:       r.staff_name,
+      castDrink:   bd.castDrink ?? null,
+      shotDrink:   bd.shotDrink ?? null,
+      castAmt:     Number(bd.castAmt)||0,
+      shotAmt:     Number(bd.shotAmt)||0,
+      champAmt:    Math.floor(champAmt),
+      salesAmt:    Number(bd.salesAmt) || refAmt,
+      bill:        Number(bd.bill) || Math.round(refAmt * 20),
+      drinkCount:  Number(r.drink_count)||0,
+      champRows,
+      adoptedType: bd.adoptedType || (refAmt > 0 && refAmt === total ? 'sales' : 'drink_champ'),
+      total,
+    };
+  });
+}
+
+// ─── 更新（自動・手動の共通処理）────────────────────
+async function refresh(){
+  const btn = document.getElementById('btnRefresh');
+  const status = document.getElementById('statusText');
+  btn.disabled = true;
+  status.textContent = '読み込み中…';
+  document.getElementById('recordsList').innerHTML = '<div class="state-msg">読み込み中…</div>';
+
+  await loadRecords();
+
+  renderRecords();
+  renderMonthlySummary();
+
+  if(loadError){
+    status.textContent = '取得に失敗しました';
+  } else {
+    status.textContent = `最終更新 ${nowLabel()}　（${records.length}件）`;
+  }
+  btn.disabled = false;
+}
+
+function nowLabel(){
+  const d = new Date();
+  const p = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+// ─── タブ ─────────────────────────────────────────
+function switchTab(name){
+  const names = ['records','monthly'];
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active', names[i]===name));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+// ─── 記録一覧（閲覧専用）────────────────────────────
+function renderRecords(){
+  const container = document.getElementById('recordsList');
+  if(loadError){
+    container.innerHTML = '<div class="state-msg error">データの取得に失敗しました<br>「更新」で再取得してください</div>';
+    return;
+  }
+  if(!records.length){
+    container.innerHTML = '<div class="empty-msg">まだ記録がありません</div>';
+    return;
+  }
+  const groups = {};
+  records.forEach(r=>{ (groups[r.date]=groups[r.date]||[]).push(r); });
+  container.innerHTML = '';
+  Object.keys(groups).sort((a,b)=>b.localeCompare(a)).forEach(date=>{
+    const [y,m,d] = date.split('-');
+    const g = document.createElement('div');
+    g.className = 'rec-group';
+    g.innerHTML = `<div class="rec-date-head">${y}年${parseInt(m)}月${parseInt(d)}日</div>`;
+    groups[date].forEach(r=>{
+      const isSales  = r.adoptedType==='sales';
+      const adoptTag = isSales ? '集客バック採用' : 'ドリンク＋シャンパン採用';
+      const champSummary = (r.champRows||[]).length>0
+        ? (r.champRows||[]).map(c=>`${c.brand}×${c.count}`).join('、')
+        : null;
+
+      const tagList = [];
+      if(r.castDrink != null) tagList.push({lbl:`Drink ${r.castDrink}杯`, zero:r.castDrink===0});
+      if(r.shotDrink != null) tagList.push({lbl:`Shot ${r.shotDrink}杯`,  zero:r.shotDrink===0});
+      if(r.castDrink == null && r.shotDrink == null && r.drinkCount != null){
+        tagList.push({lbl:`ドリンク ${r.drinkCount}杯`, zero:r.drinkCount===0});
+      }
+      if(champSummary) tagList.push({lbl:champSummary, zero:false});
+      tagList.push({lbl:`集客 ¥${(r.bill||0).toLocaleString()}`, zero:!r.bill});
+      const tags = tagList.map(t=>`<span class="tag${t.zero?' zero':''}">${t.lbl}</span>`).join('');
+
+      const card = document.createElement('div');
+      card.className = 'rec-card';
+      card.innerHTML = `
+        <div class="rec-top">
+          <span class="rec-name">${r.staff||''}</span>
+          <span class="rec-total">¥${Math.floor(r.total||0).toLocaleString()}</span>
+        </div>
+        <div class="rec-detail">
+          ${tags}
+          <span class="tag adopted">${adoptTag}</span>
+        </div>`;
+      g.appendChild(card);
+    });
+    container.appendChild(g);
+  });
+}
+
+// ─── 月間集計（閲覧専用）────────────────────────────
+function buildMonthOptions(){
+  const sel = document.getElementById('monthSelect');
+  const cur = sel.value;
+  const months = new Set();
+  records.forEach(r=>{ if(r.date) months.add(r.date.slice(0,7)); });
+  const today = new Date();
+  months.add(`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`);
+  const sorted = [...months].sort((a,b)=>b.localeCompare(a));
+  sel.innerHTML = '';
+  sorted.forEach(ym=>{
+    const [y,m] = ym.split('-');
+    const o = document.createElement('option');
+    o.value = ym;
+    o.textContent = `${y}年${parseInt(m)}月`;
+    if(ym===cur) o.selected = true;
+    sel.appendChild(o);
+  });
+  if(!sel.value) sel.value = sorted[0];
+}
+
+function renderMonthlySummary(){
+  buildMonthOptions();
+  const ym    = document.getElementById('monthSelect').value;
+  const [y,m] = ym.split('-');
+  document.getElementById('printSubtitle').textContent = `${y}年${parseInt(m)}月 インセンティブ集計`;
+  const monthly  = records.filter(r=>r.date && r.date.startsWith(ym));
+  const tbody    = document.getElementById('summaryBody');
+  const emptyMsg = document.getElementById('summaryEmpty');
+  if(!monthly.length){
+    tbody.innerHTML = '';
+    emptyMsg.style.display = 'block';
+    document.getElementById('summaryTable').style.display = 'none';
+    return;
+  }
+  emptyMsg.style.display = 'none';
+  document.getElementById('summaryTable').style.display = '';
+
+  const map = {};
+  monthly.forEach(r=>{
+    if(!map[r.staff]) map[r.staff]={castAmt:0,shotAmt:0,champAmt:0,salesAmt:0,total:0};
+    const d = map[r.staff];
+    if(r.adoptedType==='sales'){
+      d.salesAmt += r.salesAmt||0;
+    } else {
+      d.castAmt  += r.castAmt||0;
+      d.shotAmt  += r.shotAmt||0;
+      d.champAmt += r.champAmt||0;
+    }
+    d.total += r.total||0;
+  });
+
+  const grand = {castAmt:0,shotAmt:0,champAmt:0,salesAmt:0,total:0};
+  const fc = n => n===0
+    ? `<td class="val-zero">—</td>`
+    : `<td>¥${Math.floor(n).toLocaleString()}</td>`;
+
+  tbody.innerHTML = '';
+  Object.keys(map).sort().forEach(name=>{
+    const d = map[name];
+    grand.castAmt  += d.castAmt;
+    grand.shotAmt  += d.shotAmt;
+    grand.champAmt += d.champAmt;
+    grand.salesAmt += d.salesAmt;
+    grand.total    += d.total;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${name}</td>${fc(d.castAmt)}${fc(d.shotAmt)}${fc(d.champAmt)}${fc(d.salesAmt)}<td><strong>¥${Math.floor(d.total).toLocaleString()}</strong></td>`;
+    tbody.appendChild(tr);
+  });
+  const tfoot = document.createElement('tr');
+  tfoot.className = 'total-row';
+  tfoot.innerHTML = `<td>合　計</td><td>¥${Math.floor(grand.castAmt).toLocaleString()}</td><td>¥${Math.floor(grand.shotAmt).toLocaleString()}</td><td>¥${Math.floor(grand.champAmt).toLocaleString()}</td><td>¥${Math.floor(grand.salesAmt).toLocaleString()}</td><td>¥${Math.floor(grand.total).toLocaleString()}</td>`;
+  tbody.appendChild(tfoot);
+}
+
+function printSummary(){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('tab-monthly').classList.add('active');
+  window.print();
+}
+
+// ─── 初期化：ページを開いたら自動取得 ───────────────
+refresh();
+</script>
+</body>
+</html>
