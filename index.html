@@ -241,19 +241,6 @@ select{
 }
 .btn-champ-add:hover{border-color:var(--terracotta);color:var(--terracotta);background:rgba(196,118,58,.05)}
 
-/* ─── シャンパン対象者 ─── */
-.champ-targets{display:flex;flex-wrap:wrap;gap:8px}
-.champ-target{
-  display:flex;align-items:center;gap:6px;
-  background:#2e1e12;border:1px solid var(--border);border-radius:20px;
-  padding:7px 13px 7px 11px;font-size:13px;color:var(--cream);cursor:pointer;
-  transition:.15s;font-family:var(--sans);user-select:none;
-}
-.champ-target:has(input:checked){
-  border-color:var(--terracotta);background:rgba(196,118,58,.14);color:var(--terracotta);
-}
-.champ-target input{width:16px;height:16px;accent-color:var(--terracotta);cursor:pointer;margin:0}
-.champ-targets-empty{font-size:12px;color:var(--muted);padding:4px 0}
 
 /* ─── 集客バック ─── */
 .sales-calc{
@@ -636,8 +623,11 @@ select{
     <button class="btn-champ-add" onclick="addChampRow()">＋ 銘柄を追加</button>
 
     <div class="field" style="margin-top:16px">
-      <label>対象者を選ぶ <span class="hint">（選んだ人数で均等割り）</span></label>
-      <div id="champTargets" class="champ-targets"></div>
+      <label>割る人数 <span class="hint">（均等割り・自分含む）</span></label>
+      <div class="input-unit">
+        <input type="number" id="champPeople" value="1" min="1" step="1" placeholder="1" oninput="onChampPeopleChange()">
+        <span class="unit">人</span>
+      </div>
     </div>
 
     <div class="breakdown-item" style="margin-top:10px">
@@ -645,7 +635,7 @@ select{
       <span class="val" id="champSubtotal" style="font-size:14px">¥0</span>
     </div>
     <div class="breakdown-item">
-      <span class="lbl" style="font-size:12px">シャンパンバック（<span id="champShareCount">0</span>人割り）</span>
+      <span class="lbl" style="font-size:12px">シャンパンバック（<span id="champShareCount">1</span>人割り）</span>
       <span class="val" id="champShare" style="font-size:14px">¥0</span>
     </div>
   </div>
@@ -843,15 +833,14 @@ async function loadRecords(){
     const bd      = r.breakdown || {};
     const refAmt  = Number(r.referral_amount)||0;
     const total   = Number(r.total_incentive)||0;
-    // champagne_data は旧形式（配列）と新形式（{rows,targets,people}）の両方を許容
+    // champagne_data は旧形式（配列）と新形式（{rows,people}）の両方を許容
     const cd = r.champagne_data;
-    let champRows = [], champTargets = [], champPeople = 1;
+    let champRows = [], champPeople = 1;
     if(Array.isArray(cd)){
       champRows = cd;
     } else if(cd && typeof cd === 'object'){
-      champRows    = Array.isArray(cd.rows)    ? cd.rows    : [];
-      champTargets = Array.isArray(cd.targets) ? cd.targets : [];
-      champPeople  = Number(cd.people) || (champTargets.length || 1);
+      champRows   = Array.isArray(cd.rows) ? cd.rows : [];
+      champPeople = Number(cd.people) || (Array.isArray(cd.targets) ? (cd.targets.length||1) : 1);
     }
     const champAmt  = bd.champAmt ?? sumChampAmt(champRows);
     return {
@@ -863,7 +852,6 @@ async function loadRecords(){
       castAmt:     Number(bd.castAmt)||0,
       shotAmt:     Number(bd.shotAmt)||0,
       champAmt:    Math.floor(champAmt),
-      champTargets,
       champPeople,
       salesAmt:    Number(bd.salesAmt) || refAmt,
       bill:        Number(bd.bill) || Math.round(refAmt * 20),
@@ -891,7 +879,6 @@ async function loadRecords(){
   await Promise.all([loadChampagnes(), loadStaffList(), loadRecords()]);
 
   renderStaff();
-  renderChampTargets();  // 対象者チェックボックス
   addChampRow();         // CHAMPAGNES がロード済みになってから初行を生成
   updatePayDisplay();
   renderHistory();
@@ -1028,40 +1015,20 @@ function renderStaff(){
     if(n===cur) o.selected = true;
     sel.appendChild(o);
   });
-  renderChampTargets();
 }
 
-// ─── シャンパン対象者 ──────────────────────────────
-function renderChampTargets(){
-  const box = document.getElementById('champTargets');
-  if(!box) return;
-  const prev = new Set(getChampTargets());
-  box.innerHTML = '';
-  if(!staffList.length){
-    box.innerHTML = '<div class="champ-targets-empty">スタッフが登録されていません</div>';
-    updateChampSubtotal();
-    return;
-  }
-  staffList.forEach(name=>{
-    const label = document.createElement('label');
-    label.className = 'champ-target';
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.value = name;
-    cb.className = 'champ-target-cb';
-    if(prev.has(name)) cb.checked = true;
-    cb.addEventListener('change', updateChampSubtotal);
-    const span = document.createElement('span');
-    span.textContent = name;
-    label.appendChild(cb);
-    label.appendChild(span);
-    box.appendChild(label);
+// ─── シャンパン割る人数 ────────────────────────────
+function getChampPeople(){
+  const p = parseInt(document.getElementById('champPeople').value, 10);
+  return (p && p >= 1) ? p : 1;
+}
+
+// 人数変更時：各行の内訳表示と小計を再計算
+function onChampPeopleChange(){
+  document.querySelectorAll('.champ-row').forEach(row=>{
+    calcChampRow(row.id.replace('cr-',''));
   });
   updateChampSubtotal();
-}
-
-function getChampTargets(){
-  return [...document.querySelectorAll('.champ-target-cb:checked')].map(cb=>cb.value);
 }
 
 function renderStaffTab(){
@@ -1160,10 +1127,13 @@ function calcChampRow(id){
   const count = parseFloat(document.getElementById('cc-'+id).value)||0;
   const brand = CHAMPAGNES.find(c=>c.name===sel.value);
   if(!brand){ document.getElementById('cr-res-'+id).textContent=''; return; }
-  const amt = brand.price * brand.rate * count;
-  const pct = Math.round(brand.rate*100);
+  const people = getChampPeople();
+  const share  = Math.floor(brand.price * brand.rate * count / people); // 円未満切り捨て
+  const pct    = Math.round(brand.rate*100);
   document.getElementById('cr-res-'+id).textContent =
-    count===0 ? '' : `¥${brand.price.toLocaleString()} × ${count}本 × ${pct}% ＝ ¥${Math.floor(amt).toLocaleString()}`;
+    count===0 ? '' : (people>1
+      ? `¥${brand.price.toLocaleString()} × ${count}本 × ${pct}% ÷ ${people}人 ＝ ¥${share.toLocaleString()}`
+      : `¥${brand.price.toLocaleString()} × ${count}本 × ${pct}% ＝ ¥${share.toLocaleString()}`);
   updateChampSubtotal();
 }
 
@@ -1175,6 +1145,20 @@ function getChampTotal(){
     const count = parseFloat(document.getElementById('cc-'+id).value)||0;
     const brand = CHAMPAGNES.find(c=>c.name===sel?.value);
     if(brand) total += brand.price * brand.rate * count;
+  });
+  return total;
+}
+
+// 人数割・切り捨て後の自分の取り分（銘柄ごとに切り捨てて合算）
+function getChampShare(){
+  const people = getChampPeople();
+  let total = 0;
+  document.querySelectorAll('.champ-row').forEach(row=>{
+    const id    = row.id.replace('cr-','');
+    const sel   = document.getElementById('cs-'+id);
+    const count = parseFloat(document.getElementById('cc-'+id).value)||0;
+    const brand = CHAMPAGNES.find(c=>c.name===sel?.value);
+    if(brand) total += Math.floor(brand.price * brand.rate * count / people);
   });
   return total;
 }
@@ -1192,19 +1176,19 @@ function getChampRows(){
 }
 
 function updateChampSubtotal(){
-  const t = getChampTotal();
+  const t = getChampTotal();               // 合計（人数割り前の全額）
   const el = document.getElementById('champSubtotal');
   el.textContent = '¥'+Math.floor(t).toLocaleString();
   el.className = 'val'+(t===0?' zero':'');
 
-  // 選択人数で均等割り
-  const targets = getChampTargets();
-  const share   = t / (targets.length || 1);
-  const cntEl   = document.getElementById('champShareCount');
-  if(cntEl) cntEl.textContent = targets.length;
+  // 入力人数で均等割り（銘柄ごとに切り捨て）
+  const people = getChampPeople();
+  const share  = getChampShare();
+  const cntEl  = document.getElementById('champShareCount');
+  if(cntEl) cntEl.textContent = people;
   const se = document.getElementById('champShare');
   if(se){
-    se.textContent = '¥'+Math.floor(share).toLocaleString();
+    se.textContent = '¥'+share.toLocaleString();
     se.className = 'val'+(share===0?' zero':'');
   }
 }
@@ -1259,14 +1243,12 @@ function fmt(n){ return '¥'+Math.floor(n).toLocaleString('ja-JP'); }
 function calculate(){
   const castAmt    = getN('castDrink')*300;
   const shotAmt    = getN('shotDrink')*500;
-  const champTotal = getChampTotal();
-  const targets    = getChampTargets();
-  const numPeople  = targets.length || 1;
-  const champShare = champTotal / numPeople;   // 均等割後の自分の取り分
+  const numPeople  = getChampPeople();
+  const champShare = getChampShare();          // 人数割・切り捨て後の自分の取り分
   const bill       = getN('totalBill');
   const salesAmt   = bill*0.05;                // 集客バック＝売上×5%（条件なし）
 
-  // 合計報酬 ＝ ドリンク ＋ ショット ＋ シャンパン（均等割後）＋ 集客バック
+  // 合計報酬 ＝ ドリンク ＋ ショット ＋ シャンパン（人数割後）＋ 集客バック
   const total = castAmt + shotAmt + champShare + salesAmt;
 
   const setVal = (id,n)=>{
@@ -1278,7 +1260,7 @@ function calculate(){
   setVal('r_shot',  shotAmt);
   setVal('r_champ', champShare);
   setVal('r_sales', salesAmt);
-  document.getElementById('r_champ_people').textContent = targets.length;
+  document.getElementById('r_champ_people').textContent = numPeople;
 
   document.getElementById('r_total').innerHTML =
     '<small>¥</small>'+Math.floor(total).toLocaleString();
@@ -1298,8 +1280,7 @@ async function saveRecord(){
   const castDrink   = getN('castDrink');
   const shotDrink   = getN('shotDrink');
   const champRows   = getChampRows();
-  const champTargets= getChampTargets();
-  const numPeople   = champTargets.length || 1;
+  const numPeople   = getChampPeople();
   const bill        = getN('totalBill');
   const hourlyWage  = getN('hourlyWage');
   const workStart   = document.getElementById('workStart').value || null;
@@ -1307,7 +1288,7 @@ async function saveRecord(){
   const castAmt     = castDrink*300;
   const shotAmt     = shotDrink*500;
   const champTotal  = getChampTotal();
-  const champShare  = champTotal / numPeople;   // 均等割後の自分の取り分
+  const champShare  = getChampShare();          // 人数割・切り捨て後の自分の取り分
   const salesAmt    = bill*0.05;
   const total       = castAmt + shotAmt + champShare + salesAmt;
 
@@ -1315,20 +1296,18 @@ async function saveRecord(){
   const btn = document.querySelector('.btn-save');
   const originalLabel = btn ? btn.textContent : '';
   if(btn){ btn.disabled = true; btn.textContent = '保存中…'; }
-  // champagne_data に対象者情報も含めて保存
+  // champagne_data に人数情報も含めて保存
   const champagneData = {
     rows: champRows.map(c => ({ brand: c.brand, price: c.price, rate: c.rate, count: c.count })),
-    targets: champTargets,
     people: numPeople,
   };
   const breakdown = {
     castDrink, shotDrink,
     castAmt:     Math.floor(castAmt),
     shotAmt:     Math.floor(shotAmt),
-    champAmt:    Math.floor(champShare),   // 均等割後の自分の取り分
+    champAmt:    champShare,               // 人数割・切り捨て後の自分の取り分
     champTotal:  Math.floor(champTotal),
     champPeople: numPeople,
-    champTargets,
     salesAmt:    Math.floor(salesAmt),
     bill:        Math.floor(bill),
     adoptedType: 'sum',
@@ -1368,7 +1347,7 @@ async function saveRecord(){
   document.getElementById('staffSelect').value = '';
   document.getElementById('resultBox').style.display = 'none';
   document.getElementById('champRows').innerHTML = '';
-  document.querySelectorAll('.champ-target-cb:checked').forEach(cb=>cb.checked=false);
+  document.getElementById('champPeople').value = '1';
   champRowId = 0; addChampRow();
   onDrinkChange(); onBillChange(); updateChampSubtotal(); updatePayDisplay();
 
