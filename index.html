@@ -241,6 +241,20 @@ select{
 }
 .btn-champ-add:hover{border-color:var(--terracotta);color:var(--terracotta);background:rgba(196,118,58,.05)}
 
+/* ─── シャンパン対象者 ─── */
+.champ-targets{display:flex;flex-wrap:wrap;gap:8px}
+.champ-target{
+  display:flex;align-items:center;gap:6px;
+  background:#2e1e12;border:1px solid var(--border);border-radius:20px;
+  padding:7px 13px 7px 11px;font-size:13px;color:var(--cream);cursor:pointer;
+  transition:.15s;font-family:var(--sans);user-select:none;
+}
+.champ-target:has(input:checked){
+  border-color:var(--terracotta);background:rgba(196,118,58,.14);color:var(--terracotta);
+}
+.champ-target input{width:16px;height:16px;accent-color:var(--terracotta);cursor:pointer;margin:0}
+.champ-targets-empty{font-size:12px;color:var(--muted);padding:4px 0}
+
 /* ─── 集客バック ─── */
 .sales-calc{
   font-size:13px;color:var(--sub);margin-top:8px;
@@ -620,9 +634,19 @@ select{
     <div class="card-title">シャンパンバック</div>
     <div id="champRows" class="champ-rows"></div>
     <button class="btn-champ-add" onclick="addChampRow()">＋ 銘柄を追加</button>
+
+    <div class="field" style="margin-top:16px">
+      <label>対象者を選ぶ <span class="hint">（選んだ人数で均等割り）</span></label>
+      <div id="champTargets" class="champ-targets"></div>
+    </div>
+
     <div class="breakdown-item" style="margin-top:10px">
       <span class="lbl" style="font-size:12px">シャンパンバック合計</span>
       <span class="val" id="champSubtotal" style="font-size:14px">¥0</span>
+    </div>
+    <div class="breakdown-item">
+      <span class="lbl" style="font-size:12px">シャンパンバック（<span id="champShareCount">0</span>人割り）</span>
+      <span class="val" id="champShare" style="font-size:14px">¥0</span>
     </div>
   </div>
 
@@ -639,9 +663,6 @@ select{
     <div class="sales-calc">
       集客バック（×5%）＝ <strong id="salesBackPreview">¥0</strong>
     </div>
-    <div style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.6;font-family:-apple-system,sans-serif">
-      ※集客バックはドリンクバック＋シャンパンバックを上回る場合のみ適用
-    </div>
   </div>
 
   <button class="btn-calc" onclick="calculate()">計　算　す　る</button>
@@ -652,21 +673,13 @@ select{
       <p>━━ RESULT ━━</p>
     </div>
     <div class="result-body">
-      <div class="breakdown-item"><span class="lbl">キャストドリンク</span><span class="val" id="r_cast">¥0</span></div>
-      <div class="breakdown-item"><span class="lbl">ショット</span><span class="val" id="r_shot">¥0</span></div>
-      <div class="breakdown-item"><span class="lbl">シャンパンバック</span><span class="val" id="r_champ">¥0</span></div>
-      <div class="breakdown-item"><span class="lbl">ドリンク＋シャンパン 合計</span><span class="val" id="r_drinkchamp">¥0</span></div>
+      <div class="breakdown-item"><span class="lbl">ドリンクバック</span><span class="val" id="r_cast">¥0</span></div>
+      <div class="breakdown-item"><span class="lbl">ショットバック</span><span class="val" id="r_shot">¥0</span></div>
+      <div class="breakdown-item"><span class="lbl">シャンパンバック（<span id="r_champ_people">0</span>人割り）</span><span class="val" id="r_champ">¥0</span></div>
       <div class="breakdown-item"><span class="lbl">集客バック（会計×5%）</span><span class="val" id="r_sales">¥0</span></div>
 
-      <!-- 採用判定 -->
-      <div class="verdict" id="verdictBox">
-        <div class="verdict-title" id="verdictTitle"></div>
-        <div class="verdict-desc" id="verdictDesc"></div>
-        <div class="verdict-note">※集客バックはドリンクバック＋シャンパンバックを上回る場合のみ適用</div>
-      </div>
-
       <div class="total-area">
-        <div class="total-lbl">採用インセンティブ合計</div>
+        <div class="total-lbl">インセンティブ合計</div>
         <div class="total-num" id="r_total"><small>¥</small>0</div>
       </div>
       <button class="btn-save" onclick="saveRecord()">この記録を保存する</button>
@@ -830,7 +843,16 @@ async function loadRecords(){
     const bd      = r.breakdown || {};
     const refAmt  = Number(r.referral_amount)||0;
     const total   = Number(r.total_incentive)||0;
-    const champRows = Array.isArray(r.champagne_data) ? r.champagne_data : [];
+    // champagne_data は旧形式（配列）と新形式（{rows,targets,people}）の両方を許容
+    const cd = r.champagne_data;
+    let champRows = [], champTargets = [], champPeople = 1;
+    if(Array.isArray(cd)){
+      champRows = cd;
+    } else if(cd && typeof cd === 'object'){
+      champRows    = Array.isArray(cd.rows)    ? cd.rows    : [];
+      champTargets = Array.isArray(cd.targets) ? cd.targets : [];
+      champPeople  = Number(cd.people) || (champTargets.length || 1);
+    }
     const champAmt  = bd.champAmt ?? sumChampAmt(champRows);
     return {
       id:          r.id,
@@ -841,6 +863,8 @@ async function loadRecords(){
       castAmt:     Number(bd.castAmt)||0,
       shotAmt:     Number(bd.shotAmt)||0,
       champAmt:    Math.floor(champAmt),
+      champTargets,
+      champPeople,
       salesAmt:    Number(bd.salesAmt) || refAmt,
       bill:        Number(bd.bill) || Math.round(refAmt * 20),
       drinkCount:  Number(r.drink_count)||0,
@@ -867,6 +891,7 @@ async function loadRecords(){
   await Promise.all([loadChampagnes(), loadStaffList(), loadRecords()]);
 
   renderStaff();
+  renderChampTargets();  // 対象者チェックボックス
   addChampRow();         // CHAMPAGNES がロード済みになってから初行を生成
   updatePayDisplay();
   renderHistory();
@@ -1003,6 +1028,40 @@ function renderStaff(){
     if(n===cur) o.selected = true;
     sel.appendChild(o);
   });
+  renderChampTargets();
+}
+
+// ─── シャンパン対象者 ──────────────────────────────
+function renderChampTargets(){
+  const box = document.getElementById('champTargets');
+  if(!box) return;
+  const prev = new Set(getChampTargets());
+  box.innerHTML = '';
+  if(!staffList.length){
+    box.innerHTML = '<div class="champ-targets-empty">スタッフが登録されていません</div>';
+    updateChampSubtotal();
+    return;
+  }
+  staffList.forEach(name=>{
+    const label = document.createElement('label');
+    label.className = 'champ-target';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.value = name;
+    cb.className = 'champ-target-cb';
+    if(prev.has(name)) cb.checked = true;
+    cb.addEventListener('change', updateChampSubtotal);
+    const span = document.createElement('span');
+    span.textContent = name;
+    label.appendChild(cb);
+    label.appendChild(span);
+    box.appendChild(label);
+  });
+  updateChampSubtotal();
+}
+
+function getChampTargets(){
+  return [...document.querySelectorAll('.champ-target-cb:checked')].map(cb=>cb.value);
 }
 
 function renderStaffTab(){
@@ -1137,6 +1196,17 @@ function updateChampSubtotal(){
   const el = document.getElementById('champSubtotal');
   el.textContent = '¥'+Math.floor(t).toLocaleString();
   el.className = 'val'+(t===0?' zero':'');
+
+  // 選択人数で均等割り
+  const targets = getChampTargets();
+  const share   = t / (targets.length || 1);
+  const cntEl   = document.getElementById('champShareCount');
+  if(cntEl) cntEl.textContent = targets.length;
+  const se = document.getElementById('champShare');
+  if(se){
+    se.textContent = '¥'+Math.floor(share).toLocaleString();
+    se.className = 'val'+(share===0?' zero':'');
+  }
 }
 
 // ─── ドリンク変化 ──────────────────────────────────
@@ -1187,50 +1257,31 @@ function getN(id){ return parseFloat(document.getElementById(id).value)||0; }
 function fmt(n){ return '¥'+Math.floor(n).toLocaleString('ja-JP'); }
 
 function calculate(){
-  const castAmt   = getN('castDrink')*300;
-  const shotAmt   = getN('shotDrink')*500;
-  const champAmt  = getChampTotal();
-  const bill      = getN('totalBill');
-  const salesAmt  = bill*0.05;
-  const drinkChampTotal = castAmt+shotAmt+champAmt;
+  const castAmt    = getN('castDrink')*300;
+  const shotAmt    = getN('shotDrink')*500;
+  const champTotal = getChampTotal();
+  const targets    = getChampTargets();
+  const numPeople  = targets.length || 1;
+  const champShare = champTotal / numPeople;   // 均等割後の自分の取り分
+  const bill       = getN('totalBill');
+  const salesAmt   = bill*0.05;                // 集客バック＝売上×5%（条件なし）
 
-  const setVal = (id,n,force)=>{
+  // 合計報酬 ＝ ドリンク ＋ ショット ＋ シャンパン（均等割後）＋ 集客バック
+  const total = castAmt + shotAmt + champShare + salesAmt;
+
+  const setVal = (id,n)=>{
     const el = document.getElementById(id);
     el.textContent = fmt(n);
-    el.className = 'val'+(n===0&&!force?' zero':'');
+    el.className = 'val'+(n===0?' zero':'');
   };
   setVal('r_cast',  castAmt);
   setVal('r_shot',  shotAmt);
-  setVal('r_champ', champAmt);
-  setVal('r_drinkchamp', drinkChampTotal, true);
+  setVal('r_champ', champShare);
   setVal('r_sales', salesAmt);
-
-  // 採用判定
-  const useSales    = salesAmt > drinkChampTotal;
-  const adoptedAmt  = useSales ? salesAmt : drinkChampTotal;
-  const box         = document.getElementById('verdictBox');
-  const title       = document.getElementById('verdictTitle');
-  const desc        = document.getElementById('verdictDesc');
-
-  // アクティブ値をハイライト
-  document.getElementById('r_drinkchamp').className = 'val active-val'+(drinkChampTotal===0?' zero':'');
-  document.getElementById('r_sales').className      = 'val'+(salesAmt===0?' zero':'');
-
-  if(useSales){
-    box.className     = 'verdict adopted-sales';
-    title.textContent = '▶ 集客バック採用';
-    desc.textContent  = `集客バック（${fmt(salesAmt)}）がドリンク＋シャンパン（${fmt(drinkChampTotal)}）を上回りました`;
-    document.getElementById('r_drinkchamp').className = 'val zero';
-    document.getElementById('r_sales').className      = 'val active-val';
-  } else {
-    box.className     = 'verdict adopted-drink';
-    title.textContent = '▶ ドリンク＋シャンパンバック採用';
-    desc.textContent  = `ドリンク＋シャンパン（${fmt(drinkChampTotal)}）が集客バック（${fmt(salesAmt)}）以上です`;
-    document.getElementById('r_sales').className      = 'val zero';
-  }
+  document.getElementById('r_champ_people').textContent = targets.length;
 
   document.getElementById('r_total').innerHTML =
-    '<small>¥</small>'+Math.floor(adoptedAmt).toLocaleString();
+    '<small>¥</small>'+Math.floor(total).toLocaleString();
 
   const resultBox = document.getElementById('resultBox');
   resultBox.style.display = 'block';
@@ -1244,37 +1295,43 @@ async function saveRecord(){
   if(!date)  { alert('日付を選択してください'); return; }
   if(!staff) { alert('スタッフを選択してください'); return; }
 
-  const castDrink  = getN('castDrink');
-  const shotDrink  = getN('shotDrink');
-  const champRows  = getChampRows();
-  const bill       = getN('totalBill');
-  const hourlyWage = getN('hourlyWage');
-  const workStart  = document.getElementById('workStart').value || null;
-  const workEnd    = document.getElementById('workEnd').value || null;
-  const castAmt    = castDrink*300;
-  const shotAmt    = shotDrink*500;
-  const champAmt   = getChampTotal();
-  const salesAmt   = bill*0.05;
-  const drinkChamp = castAmt+shotAmt+champAmt;
-  const useSales   = salesAmt > drinkChamp;
-  const adopted    = useSales ? salesAmt : drinkChamp;
+  const castDrink   = getN('castDrink');
+  const shotDrink   = getN('shotDrink');
+  const champRows   = getChampRows();
+  const champTargets= getChampTargets();
+  const numPeople   = champTargets.length || 1;
+  const bill        = getN('totalBill');
+  const hourlyWage  = getN('hourlyWage');
+  const workStart   = document.getElementById('workStart').value || null;
+  const workEnd     = document.getElementById('workEnd').value || null;
+  const castAmt     = castDrink*300;
+  const shotAmt     = shotDrink*500;
+  const champTotal  = getChampTotal();
+  const champShare  = champTotal / numPeople;   // 均等割後の自分の取り分
+  const salesAmt    = bill*0.05;
+  const total       = castAmt + shotAmt + champShare + salesAmt;
 
   // Supabase 保存
   const btn = document.querySelector('.btn-save');
   const originalLabel = btn ? btn.textContent : '';
   if(btn){ btn.disabled = true; btn.textContent = '保存中…'; }
-  const champagneData = champRows.map(c => ({
-    brand: c.brand, price: c.price, rate: c.rate, count: c.count
-  }));
-  const adoptedType = useSales ? 'sales' : 'drink_champ';
+  // champagne_data に対象者情報も含めて保存
+  const champagneData = {
+    rows: champRows.map(c => ({ brand: c.brand, price: c.price, rate: c.rate, count: c.count })),
+    targets: champTargets,
+    people: numPeople,
+  };
   const breakdown = {
     castDrink, shotDrink,
-    castAmt:  Math.floor(castAmt),
-    shotAmt:  Math.floor(shotAmt),
-    champAmt: Math.floor(champAmt),
-    salesAmt: Math.floor(salesAmt),
-    bill:     Math.floor(bill),
-    adoptedType,
+    castAmt:     Math.floor(castAmt),
+    shotAmt:     Math.floor(shotAmt),
+    champAmt:    Math.floor(champShare),   // 均等割後の自分の取り分
+    champTotal:  Math.floor(champTotal),
+    champPeople: numPeople,
+    champTargets,
+    salesAmt:    Math.floor(salesAmt),
+    bill:        Math.floor(bill),
+    adoptedType: 'sum',
   };
   const payload = {
     staff_name: staff,
@@ -1285,7 +1342,7 @@ async function saveRecord(){
     drink_count: castDrink + shotDrink,
     champagne_data: champagneData,
     referral_amount: Math.floor(salesAmt),
-    total_incentive: Math.floor(adopted),
+    total_incentive: Math.floor(total),
     breakdown,
   };
   const { error } = await sb.from('incentive_records').insert(payload);
@@ -1311,6 +1368,7 @@ async function saveRecord(){
   document.getElementById('staffSelect').value = '';
   document.getElementById('resultBox').style.display = 'none';
   document.getElementById('champRows').innerHTML = '';
+  document.querySelectorAll('.champ-target-cb:checked').forEach(cb=>cb.checked=false);
   champRowId = 0; addChampRow();
   onDrinkChange(); onBillChange(); updateChampSubtotal(); updatePayDisplay();
 
@@ -1334,11 +1392,13 @@ function renderRecords(){
     g.className = 'rec-group';
     g.innerHTML = `<div class="rec-date-head">${y}年${parseInt(m)}月${parseInt(d)}日</div>`;
     groups[date].forEach(r=>{
-      const isSales  = r.adoptedType==='sales';
-      const adoptTag = isSales ? '集客バック採用' : 'ドリンク＋シャンパン採用';
+      const adoptTag = r.adoptedType==='sales'       ? '集客バック採用'
+                     : r.adoptedType==='drink_champ' ? 'ドリンク＋シャンパン採用'
+                     : null;
       const champSummary = (r.champRows||[]).length>0
         ? (r.champRows||[]).map(c=>`${c.brand}×${c.count}`).join('、')
         : null;
+      const champPeopleTag = (r.champPeople||1) > 1 ? `${r.champPeople}人割り` : null;
 
       const tagList = [];
       if(r.castDrink != null) tagList.push({lbl:`Drink ${r.castDrink}杯`, zero:r.castDrink===0});
@@ -1347,6 +1407,7 @@ function renderRecords(){
         tagList.push({lbl:`ドリンク ${r.drinkCount}杯`, zero:r.drinkCount===0});
       }
       if(champSummary) tagList.push({lbl:champSummary, zero:false});
+      if(champPeopleTag) tagList.push({lbl:champPeopleTag, zero:false});
       tagList.push({lbl:`集客 ¥${(r.bill||0).toLocaleString()}`, zero:!r.bill});
       const tags = tagList.map(t=>`<span class="tag${t.zero?' zero':''}">${t.lbl}</span>`).join('');
 
@@ -1365,7 +1426,7 @@ function renderRecords(){
         </div>
         <div class="rec-detail">
           ${tags}
-          <span class="tag adopted">${adoptTag}</span>
+          ${adoptTag ? `<span class="tag adopted">${adoptTag}</span>` : ''}
         </div>`;
       card.appendChild(body);
       g.appendChild(card);
@@ -1430,11 +1491,19 @@ function renderMonthlySummary(){
     if(!map[r.staff]) map[r.staff]={castAmt:0,shotAmt:0,champAmt:0,salesAmt:0,total:0};
     const d = map[r.staff];
     if(r.adoptedType==='sales'){
+      // 旧形式：集客バック採用
       d.salesAmt += r.salesAmt||0;
-    } else {
+    } else if(r.adoptedType==='drink_champ'){
+      // 旧形式：ドリンク＋シャンパン採用
       d.castAmt  += r.castAmt||0;
       d.shotAmt  += r.shotAmt||0;
       d.champAmt += r.champAmt||0;
+    } else {
+      // 新形式：すべて合算
+      d.castAmt  += r.castAmt||0;
+      d.shotAmt  += r.shotAmt||0;
+      d.champAmt += r.champAmt||0;
+      d.salesAmt += r.salesAmt||0;
     }
     d.total += r.total||0;
   });
